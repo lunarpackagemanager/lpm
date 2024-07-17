@@ -1,0 +1,24 @@
+description = ""
+files = ["*"]
+keywords = [""]
+name = "lpm"
+owner = "jo"
+repository = ""
+version = "0.1.0"
+
+[build_config]
+name = "lpm"
+
+[build_config.release]
+debug_level = 0
+optimization_level = 2
+
+[dependencies]
+table = "0.1.0"
+zzlib = "0.1.0"
+
+[dev_dependencies]
+
+[main]
+bin = "./src/init.luau"
+lib = "./src/api.luau"

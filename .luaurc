@@ -1,0 +1,11 @@
+{
+  "aliases": {
+    "deps": "./deps",
+    "lpm": "./src",
+    "pkg": "./lune_modules"
+  },
+  "languageMode": "strict",
+  "lint": {
+    "*": false
+  }
+}
