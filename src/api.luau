@@ -15,6 +15,7 @@ api.commands = {
   ["uninstall"] = require("./commands/uninstall"),
   ["init"] = require("./commands/init"),
   ["build"] = require("./commands/build"),
+  ["run"] = require("./commands/run"),
 }
 
 return api

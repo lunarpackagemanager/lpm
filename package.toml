@@ -6,6 +6,9 @@ owner = "jo"
 repository = ""
 version = "0.1.0"
 
+[scripts]
+build = "lunew src -- build --release"
+
 [build_config]
 name = "lpm"
 
