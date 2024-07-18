@@ -3,7 +3,13 @@
 local fs = require("@lune/fs")
 local output = require("./output")
 local serde = require("@lune/serde")
-local sys = require("./sys")
+local std = require("@pkg/std")
+local path = std.path
+local sys = std.sys
+local os = std.os
+local config = require("../config")
+
+local GLOBAL_DIR = `{os.homedir()}/.{config.name.long:lower()}`
 local bundler = {}
 
 local BUNDLE_HEADER = [[
@@ -28,7 +34,7 @@ function bundler.bundle(entrypoint_path: string, extra_headers: { string }?): st
 
   local function process_file(file_path: string)
     local source = fs.readFile(file_path)
-    local source_dir = sys.folder_of(file_path)
+    local source_dir = path.dirname(file_path) .. "/"
     local require_hashes = {}
 
     -- Pass One: Identify dependencies and replace requires with intermediates
@@ -112,7 +118,7 @@ function bundler.bundle(entrypoint_path: string, extra_headers: { string }?): st
 
     table.insert(file_map, {
       path = path,
-      line = sys.line_count(output),
+      line = sys.lineCount(output),
     })
 
     output ..= string.rep("-", comment_length) .. "\n\n"
@@ -121,7 +127,7 @@ function bundler.bundle(entrypoint_path: string, extra_headers: { string }?): st
 
   for hash, data in pairs(dependencies) do
     write_file(
-      sys.normalize_path(data.path),
+      sys.normalisePath(data.path),
       `__LPM_MODULES["{hash}"] = function()\n\n`
         .. "-- v Original File Start v --\n"
         .. data.source
@@ -134,12 +140,9 @@ function bundler.bundle(entrypoint_path: string, extra_headers: { string }?): st
 
   local time_taken = math.round((os.clock() - start_t) * 1000000) / 1000
 
-  local header = (
-    `--[[\n\tBundled with Luau Package Manager v{_G.VERSION} (https://github`
-    .. `.com/lune-package/LPM) in {time_taken}ms\n\n\tIndex:`
-  ):gsub("\t", "    ")
+  local header = string.gsub(`--[[ Bundled with Luau Package Manager\n\n\tIndex:`, "\t", "    ")
 
-  local header_line_overhead = sys.line_count(header) + 5
+  local header_line_overhead = sys.lineCount(header) + 5
 
   for i, file in file_map do
     header ..= `\n    - line {file.line + header_line_overhead} = {file.path}`

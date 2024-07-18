@@ -1,5 +1,5 @@
 local class = require("./class")
-local table = require("./table")
+local table = require("@pkg/table")
 local types = require("../types")
 
 type EventEmitter = types.EventEmitter

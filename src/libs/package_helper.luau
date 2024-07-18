@@ -5,8 +5,10 @@ local output = require("./output")
 local process = require("@lune/process")
 local resolver = require("./resolver")
 local serde = require("@lune/serde")
-local sys = require("./sys")
+local std = require("@pkg/std")
 local t = require("../types")
+
+local fs = std.fs
 
 local package_handler = {}
 
@@ -17,7 +19,7 @@ type InstallPackageOptions = {
 }
 
 function package_handler.is_package_installed(name: string): boolean
-  return fs.isDir(`lune_modules/{name:split("/")[1]}`) and fs.isDir(`{sys.local_dir}/{name}`)
+  return fs.isDir(`lune_modules/{name:split("/")[1]}`) and fs.isDir(`lune_modules/{name}`)
 end
 
 function package_handler.get_root_dependencies()
@@ -102,7 +104,7 @@ function package_handler.install_package(identifier: string, options: InstallPac
   if fs.isDir(install_path) then
     fs.removeDir(install_path)
   end
-  sys.ensure_dir_exists(install_path)
+  fs.ensureDirExists(install_path)
 
   local repo_url = `https://github.com/lune-package/{package_data.name}.git`
 
@@ -123,10 +125,10 @@ function package_handler.install_package(identifier: string, options: InstallPac
 
   fs.removeDir(`{install_path}/.git`)
 
-  local package_has_manifest = fs.isFile(`{install_path}/{sys.manifest_name}`)
+  local package_has_manifest = fs.isFile(`{install_path}/package.toml`)
 
   if package_has_manifest then
-    local ok, package_manifest = manifest_helper.read(false, `{install_path}/{sys.manifest_name}`)
+    local ok, package_manifest = manifest_helper.read(false, `{install_path}/package.toml`)
     if not ok then
       output.warn("Installed package has an invalid manifest file, use with caution")
       return
@@ -144,7 +146,7 @@ function package_handler.install_package(identifier: string, options: InstallPac
 
     -- Include files only --
     local file_globs = package_manifest.files or { "*" }
-    local raw_files = sys.read_dir_flat(install_path, true)
+    local raw_files = fs.readDirFlat(install_path, true)
     local files_to_keep = {}
 
     for _, glob in file_globs :: { string } do
@@ -153,7 +155,7 @@ function package_handler.install_package(identifier: string, options: InstallPac
         mid = "/"
       end
       glob = install_path .. mid .. glob
-      local files = sys.filter_files(raw_files, glob)
+      local files = fs.filterFiles(raw_files, glob)
 
       for _, file in files do
         if not table.find(files_to_keep, file) then
@@ -164,7 +166,7 @@ function package_handler.install_package(identifier: string, options: InstallPac
 
     for _, file in raw_files do
       if not table.find(files_to_keep, file) then
-        sys.remove(file)
+        fs.remove(file)
       end
     end
 

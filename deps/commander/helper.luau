@@ -2,7 +2,7 @@ local types = require("./types")
 local util = require("./builtin/util")
 
 local String = require("@deps/string")
-local Table = require("@deps/table")
+local Table = require("@pkg/table")
 
 type Arg = types.Arg
 type Opt = types.Opt
@@ -205,7 +205,7 @@ function Helper.formatHelp(cmd: Command)
     return table.concat(result, "\n")
   end
 
-  local function formatList(textArray: Table.Table<string>)
+  local function formatList(textArray: { string })
     return addIndentation(textArray)
   end
 

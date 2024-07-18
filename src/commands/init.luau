@@ -1,9 +1,12 @@
-local process = require("@deps/std/process")
 local stdio = require("@lune/stdio")
-local sys = require("@deps/std/sys")
 local Command = require("@deps/commander").Command
 local fs = require("@lune/fs")
 local serde = require("@lune/serde")
+local std = require("@pkg/std")
+local os = std.os
+local path = std.path
+local process = std.process
+
 local t = require("../types")
 
 local manifest_helper = require("../libs/manifest_helper")
@@ -18,10 +21,10 @@ local command = Command.new("init")
     local questionnaire = {}
     if opts.prompt then
       questionnaire = {
-        name = stdio.prompt("text", "Package Name", sys.cwd_name),
+        name = stdio.prompt("text", "Package Name", path.basename(process.cwd())),
         version = stdio.prompt("text", "Package Version", "0.1.0"),
         main = stdio.prompt("text", "Package Entrypoint", "./src/init.luau"),
-        owner = stdio.prompt("text", "Package Owner", sys.user_info().username),
+        owner = stdio.prompt("text", "Package Owner", os.userInfo().username),
         description = stdio.prompt("text", "Package Description"),
         keywords = stdio.prompt("text", "Package Keywords (seperated by ';')"):split(";"),
         repository = stdio.prompt("text", "Package Repository"),

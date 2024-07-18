@@ -1,9 +1,7 @@
 _G.LPM_OUTPUT_MODE = "CLI"
 _G.VERSION = "0.1.0"
 local api = require("./api")
-local fs = require("@lune/fs")
-local process = require("@deps/std/process")
-local stdio = require("@lune/stdio")
+local process = require("@pkg/std").process
 local program = require("@deps/commander").program
 
 local function main()

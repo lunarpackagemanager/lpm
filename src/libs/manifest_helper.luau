@@ -3,14 +3,18 @@ local serde = require("@lune/serde")
 
 local config = require("../config")
 local output = require("./output")
-local sys = require("./sys")
 
 local t = require("../types")
 
-local MANIFEST_PATH = `./{sys.manifest_name}`
+local std = require("@pkg/std")
+local process = std.process
+local os = std.os
+local path = std.path
+
+local MANIFEST_PATH = `./package.toml`
 
 local MANIFEST_DEFAULTS = {
-  owner = sys.user_info().username,
+  owner = os.userInfo().username,
   files = { "*" },
   dependencies = {},
   description = "",
@@ -31,11 +35,11 @@ local manifest_helper = {}
 
 function manifest_helper.new(questionnaire: { [string]: any }): t.PackageManifest
   return {
-    name = questionnaire.name or sys.cwd_name,
+    name = questionnaire.name or path.basename(process.cwd()),
     version = questionnaire.version or "0.1.0",
     main = questionnaire.main or "./src/init.luau",
 
-    owner = questionnaire.owner or sys.user_info().username,
+    owner = questionnaire.owner or os.userInfo().username,
     files = { "*" },
     dependencies = {},
     dev_dependencies = {},

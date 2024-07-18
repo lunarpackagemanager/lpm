@@ -4,11 +4,12 @@ local Helper = require("./helper")
 local Opt = require("./opt")
 local class = require("./builtin/class")
 local eventEmitter = require("./builtin/event")
-local process = require("@deps/std/process")
+local std = require("@pkg/std")
+local process = std.process
 local types = require("./types")
 
 local String = require("@deps/string")
-local Table = require("@deps/table")
+local Table = require("@pkg/table")
 local util = require("./builtin/util")
 
 type Opt = types.Opt

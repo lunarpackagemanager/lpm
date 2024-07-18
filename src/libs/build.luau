@@ -6,8 +6,12 @@ local manifest_helper = require("./manifest_helper")
 local net = require("@lune/net")
 local output = require("./output")
 local process = require("@lune/process")
-local sys = require("./sys")
+local std = require("@pkg/std")
 local zip = require("@pkg/zzlib")
+
+local os = std.os
+
+local GLOBAL_DIR = `{os.homedir()}/.{config.name.long:lower()}`
 
 local build = {}
 
@@ -35,7 +39,7 @@ local function run(cmd: string)
 end
 
 function build.get_remote_runtime(os: string, arch: string, version: string?): string
-  local cache_name = `{sys.global_dir}/bin/lune-{os}-{arch}`
+  local cache_name = `{GLOBAL_DIR}/bin/lune-{os}-{arch}`
 
   if fs.isFile(cache_name) then
     return fs.readFile(cache_name)

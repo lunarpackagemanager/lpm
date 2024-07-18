@@ -1,7 +1,7 @@
 local types = require("./types")
 
 local String = require("@deps/string")
-local Table = require("@deps/table")
+local Table = require("@pkg/table")
 
 type Arg = types.Arg
 

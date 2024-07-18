@@ -1,7 +1,12 @@
-local sys = require("./libs/sys")
+local config = require("./config")
+local std = require("@pkg/std")
+local fs = std.fs
+local os = std.os
 
-sys.ensure_dir_exists(sys.global_dir)
-sys.ensure_dir_exists(`{sys.global_dir}/bin`)
+local GLOBAL_DIR = `{os.homedir()}/.{config.name.long:lower()}`
+
+fs.ensureDirExists(GLOBAL_DIR)
+fs.ensureDirExists(`{GLOBAL_DIR}/bin`)
 
 local api = {}
 

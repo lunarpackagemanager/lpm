@@ -1,7 +1,6 @@
 local fs = require("@lune/fs")
 local net = require("@lune/net")
 local output = require("./output")
-local sys = require("./sys")
 local t = require("../types")
 
 local resolver = {}
