@@ -35,7 +35,7 @@ local function run(cmd: string)
   local command = table.remove(arguments, 1) :: string
   table.insert(arguments, ">")
   table.insert(arguments, "nul")
-  process.spawn(command, arguments, { stdio = "none" })
+  process.spawn(command, arguments, { stdio = "forward" })
 end
 
 function build.get_remote_runtime(os: string, arch: string, version: string?): string

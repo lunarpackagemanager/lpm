@@ -6,9 +6,6 @@ owner = "jo"
 repository = ""
 version = "0.1.0"
 
-[scripts]
-build = "lunew src -- build --release"
-
 [build_config]
 name = "lpm"
 
@@ -17,7 +14,7 @@ debug_level = 0
 optimization_level = 2
 
 [dependencies]
-std = "0.1.2"
+std = "0.1.3"
 table = "0.1.0"
 zzlib = "0.1.0"
 
@@ -26,3 +23,6 @@ zzlib = "0.1.0"
 [main]
 bin = "./src/init.luau"
 lib = "./src/api.luau"
+
+[scripts]
+build = "lunew src -- build --release"
