@@ -1,6 +1,9 @@
 local class = require("./class")
-local table = require("@pkg/table")
+local libutil = require("@pkg/libutil")
+
 local types = require("../types")
+
+local table = libutil.table
 
 type EventEmitter = types.EventEmitter
 local EventEmitter = {

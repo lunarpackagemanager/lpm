@@ -1,9 +1,11 @@
 --!nocheck
 
-local Table = require("@pkg/table")
+local libutil = require("@pkg/libutil")
 local manifest_helper = require("./manifest_helper")
 local output = require("./output")
 local std = require("@pkg/std")
+
+local Table = libutil.table
 
 local fs = std.fs
 local process = std.process

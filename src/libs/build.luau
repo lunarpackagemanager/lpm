@@ -33,8 +33,8 @@ end
 local function run(cmd: string)
   local arguments = string.split(cmd, " ")
   local command = table.remove(arguments, 1) :: string
-  table.insert(arguments, ">")
-  table.insert(arguments, "nul")
+  -- table.insert(arguments, ">")
+  -- table.insert(arguments, "nul")
   process.spawn(command, arguments, { stdio = "forward" })
 end
 
@@ -104,7 +104,9 @@ function build.build(mode: "dev" | "release"?)
   b_config.lune_version = b_config.lune_version or config.lune_version
   b_config.name = b_config.name or manifest.name
 
+  print("Bundling files...")
   local bundled = bundler.bundle((manifest.main :: any).bin or manifest.main)
+  print("Compiling files...")
   local bytecode = luau.compile(bundled, {
     optimizationLevel = b_config.optimization_level,
     debugLevel = b_config.debug_level,

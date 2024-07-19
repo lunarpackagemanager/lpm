@@ -1,8 +1,10 @@
 local types = require("./types")
 local util = require("./builtin/util")
 
-local String = require("@deps/string")
-local Table = require("@pkg/table")
+local libutil = require("@pkg/libutil")
+
+local Table = libutil.table
+local String = libutil.string
 
 type Arg = types.Arg
 type Opt = types.Opt

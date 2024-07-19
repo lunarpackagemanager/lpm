@@ -8,8 +8,11 @@ local std = require("@pkg/std")
 local process = std.process
 local types = require("./types")
 
-local String = require("@deps/string")
-local Table = require("@pkg/table")
+local libutil = require("@pkg/libutil")
+
+local Table = libutil.table
+local String = libutil.string
+
 local util = require("./builtin/util")
 
 type Opt = types.Opt
