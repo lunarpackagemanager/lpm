@@ -1,6 +1,8 @@
-local Command = require("@deps/commander").Command
+local Commander = require("../dependencies/commander")
 
 local package_helper = require("../libs/package_helper")
+
+local Command = Commander.Command
 
 local command = Command.new("uninstall")
   :description("Uninstall a package")

@@ -1,14 +1,13 @@
 local config = require("../config")
-local fs = require("@lune/fs")
 local manifest_helper = require("./manifest_helper")
 local output = require("./output")
-local process = require("@lune/process")
 local resolver = require("./resolver")
 local serde = require("@lune/serde")
 local std = require("@pkg/std")
 local t = require("../types")
 
 local fs = std.fs
+local process = std.process
 
 local package_handler = {}
 
@@ -16,6 +15,17 @@ type InstallPackageOptions = {
   add_dependency: boolean | string?,
   warn_on_already_installed: boolean?,
   dont_reinstall: boolean?,
+}
+
+type Dependency = {
+  version: DependencyVersion,
+  dependencies: { [string]: Dependency }?,
+}
+
+type DependencyVersion = {
+  major: number,
+  minor: number,
+  patch: number,
 }
 
 function package_handler.is_package_installed(name: string): boolean
@@ -26,20 +36,115 @@ function package_handler.get_root_dependencies()
   local read_ok, manifest, commit = manifest_helper.read(true)
   assert(read_ok and manifest and commit, "Package manifest not found")
 
-  return manifest.dependencies or {}
+  local version = resolver.parse_semver(manifest.version)
+
+  local data = {}
+  if version.valid then
+    data = {
+      [manifest.name] = {
+        version = { major = version.major, minor = version.minor, patch = version.patch },
+        dependencies = {},
+      },
+    }
+  end
+
+  for dependencyName, depencyVersion in manifest.dependencies do
+    local depVersion = resolver.parse_semver(depencyVersion)
+
+    if depVersion.valid then
+      data[manifest.name].dependencies[dependencyName] = {
+        version = { major = depVersion.major, minor = depVersion.minor, patch = depVersion.patch },
+      }
+    end
+  end
+
+  return data
 end
 
-function package_handler.get_all_dependencies()
-  local read_ok, manifest, commit = manifest_helper.read(true)
+function package_handler.get_all_dependencies(path: string?, total_deps: any?)
+  local read_ok, manifest, commit = manifest_helper.read(true, path)
   assert(read_ok and manifest and commit, "Package manifest not found")
 
-  local total_deps = {}
+  local total_deps = total_deps or {}
 
-  for packageName in manifest.dependencies do
-    table.insert(total_deps, packageName)
+  if total_deps[manifest.name] == nil then
+    local version = resolver.parse_semver(manifest.version)
+    if version.valid then
+      total_deps[manifest.name] =
+        { version = { major = version.major, minor = version.minor, patch = version.patch }, dependencies = {} }
+    end
+  end
+
+  for dependencyName, dependencyVersion in manifest.dependencies do
+    local package_manifest_path = `lune_modules/{dependencyName}/package.toml`
+    if fs.isFile(package_manifest_path) then
+      package_handler.get_all_dependencies(package_manifest_path, total_deps[manifest.name].dependencies)
+    end
   end
 
   return total_deps
+end
+
+local connectors = {
+  tee = "├",
+  elbow = "└",
+  hLine = "─",
+  space = " ",
+  vLine = "│",
+}
+
+function package_handler.print_dependencies(deps: { [string]: Dependency }, prefix: string?, recursive: boolean?)
+  local actualPrefix = prefix or ""
+
+  local keys = {}
+  for k in pairs(deps) do
+    table.insert(keys, k)
+  end
+  table.sort(keys)
+
+  for i, packageName in ipairs(keys) do
+    local packageData = deps[packageName]
+    local is_current_last = (i == #keys)
+
+    local connector = is_current_last and (connectors.elbow .. connectors.hLine .. connectors.hLine)
+      or (connectors.tee .. connectors.hLine .. connectors.hLine)
+    local sub_prefix = is_current_last
+        and (connectors.space .. connectors.space .. connectors.space .. connectors.space)
+      or (connectors.vLine .. connectors.space .. connectors.space .. connectors.space)
+
+    local has_sub_dependencies = packageData.dependencies and next(packageData.dependencies) ~= nil
+
+    -- If node has sub-dependencies, use the special connector
+    if has_sub_dependencies then
+      connector = is_current_last and (connectors.elbow .. connectors.hLine .. connectors.hLine .. connectors.hLine)
+        or (connectors.tee .. connectors.hLine .. connectors.hLine .. connectors.hLine)
+    end
+
+    output.write(
+      actualPrefix
+        .. connector
+        .. packageName
+        .. "@"
+        .. `{packageData.version.major}.{packageData.version.minor}.{packageData.version.patch}`
+    )
+
+    if has_sub_dependencies then
+      -- Recursive call to print sub-dependencies
+      package_handler.print_dependencies(packageData.dependencies :: any, actualPrefix .. sub_prefix, true)
+    end
+  end
+end
+
+-- Function to start printing from the root node
+function package_handler.print_all_dependencies(deps: { [string]: Dependency })
+  local root_package_name = next(deps)
+  if root_package_name then
+    local root_package_data = deps[root_package_name]
+    output.write(
+      `{root_package_name}@{root_package_data.version.major}.{root_package_data.version.minor}.{root_package_data.version.patch}`
+    )
+    package_handler.print_dependencies(root_package_data.dependencies :: any, nil, true)
+  end
 end
 
 function package_handler.for_each_installed_package(func: (name: string, path: string) -> ())
@@ -59,7 +164,7 @@ function package_handler.treeshake()
   local valid_dependencies = package_handler.get_all_dependencies()
 
   package_handler.for_each_installed_package(function(name, path)
-    if not table.find(valid_dependencies, name) then
+    if not valid_dependencies[name] then
       fs.removeDir(path)
       output.write(`Removed {name}`)
     end

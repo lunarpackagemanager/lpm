@@ -1,19 +1,19 @@
 local Arg = require("./arg")
-local Error = require("./builtin/error")
 local Helper = require("./helper")
 local Opt = require("./opt")
-local class = require("./builtin/class")
-local eventEmitter = require("./builtin/event")
-local std = require("@pkg/std")
-local process = std.process
 local types = require("./types")
 
+local Error = require("./builtin/error")
 local libutil = require("@pkg/libutil")
+local std = require("@pkg/std")
+local util = require("./builtin/util")
 
 local Table = libutil.table
 local String = libutil.string
+local class = libutil.class
+local eventEmitter = libutil.eventEmitter
 
-local util = require("./builtin/util")
+local process = std.process
 
 type Opt = types.Opt
 type Arg = types.Arg

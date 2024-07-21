@@ -1,5 +1,7 @@
-local Command = require("@deps/commander").Command
+local Commander = require("../dependencies/commander")
 local build = require("../libs/build")
+
+local Command = Commander.Command
 
 local command = Command.new("build")
   :description("Build package")

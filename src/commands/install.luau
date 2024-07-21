@@ -1,7 +1,9 @@
-local Command = require("@deps/commander").Command
+local Commander = require("../dependencies/commander")
 
 local manifest_helper = require("../libs/manifest_helper")
 local package_helper = require("../libs/package_helper")
+
+local Command = Commander.Command
 
 local command = Command.new("install")
   :description("Install a package")

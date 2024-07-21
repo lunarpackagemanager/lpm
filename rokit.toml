@@ -6,3 +6,4 @@
 [tools]
 lune = "lune-org/lune@0.8.6"
 stylua = "JohnnyMorganz/stylua@0.20.0"
+darklua = "seaofvoices/darklua@0.13.1"

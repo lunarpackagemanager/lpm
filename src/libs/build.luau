@@ -1,14 +1,15 @@
 local bundler = require("./bundler")
 local config = require("../config")
-local fs = require("@lune/fs")
 local luau = require("@lune/luau")
 local manifest_helper = require("./manifest_helper")
 local net = require("@lune/net")
 local output = require("./output")
-local process = require("@lune/process")
+local serde = require("@lune/serde")
 local std = require("@pkg/std")
 local zip = require("@pkg/zzlib")
 
+local fs = std.fs
+local process = std.process
 local os = std.os
 
 local GLOBAL_DIR = `{os.homedir()}/.{config.name.long:lower()}`
@@ -22,6 +23,53 @@ local targets = {
   "linux-x86_64",
   "macos-x86_64",
   "all",
+}
+
+export type Rule = {
+  identifier: string,
+  rule: string,
+  value: string,
+}
+
+export type BundleConfig = {
+  bundle: {
+    excludes: { string },
+    modules_identifier: string,
+    require_mode: {
+      name: string,
+      sources: {
+        [string]: string,
+      },
+    },
+  },
+  generator: string,
+  rules: { string | Rule },
+}
+
+local bundling: BundleConfig = {
+  bundle = {
+    excludes = {
+      "@lune/**",
+    },
+    modules_identifier = "__LPM_BUNDLE_MODULES",
+    require_mode = {
+      name = "path",
+      sources = {
+        ["@pkg"] = "./lune_modules/",
+      },
+    },
+  },
+  generator = "readable",
+  rules = {
+    "remove_types",
+    "compute_expression",
+    "remove_unused_if_branch",
+    {
+      identifier = "VERSION",
+      rule = "inject_global_value",
+      value = "0.1.0",
+    },
+  },
 }
 
 local MAGIC = "cr3sc3nt"
@@ -59,6 +107,38 @@ function build.get_remote_runtime(os: string, arch: string, version: string?): s
   fs.writeFile(cache_name, runtime)
 
   return runtime
+end
+
+function build.get_bundler_runtime(os: string, arch: string): string
+  local latest_release = net.request(`https://api.github.com/repos/seaofvoices/darklua/releases/latest`)
+  local cache_name = `{GLOBAL_DIR}/bin/darklua-{os}-{arch}`
+
+  if fs.isFile(cache_name) then
+    return cache_name
+  end
+
+  local url =
+    string.format("https://github.com/seaofvoices/darklua/releases/download/v0.13.1/darklua-%s-%s.zip", os, arch)
+
+  local container = net.request(url)
+
+  local runtime = zip.unzip(container.body, `darklua{if os == "windows" then ".exe" else ""}`)
+  fs.writeFile(cache_name, runtime)
+
+  process.spawn("chmod", { "+x", cache_name })
+
+  return cache_name
+end
+
+function build.bundle(os: string, arch: string, main: string, out_name: string)
+  local bundler_runtime = build.get_bundler_runtime(os, arch)
+  fs.writeFile(".darklua.json", serde.encode("json", bundling))
+  process.spawn(`{bundler_runtime}`, { "process", main, `./dist/{out_name}.luau`, "--config", ".darklua.json" })
+
+  local bundleResult = fs.readFile(`./dist/{out_name}.luau`)
+  fs.removeFile(".darklua.json")
+
+  return bundleResult
 end
 
 local function compress(a: string, b: string)
@@ -104,20 +184,23 @@ function build.build(mode: "dev" | "release"?)
   b_config.lune_version = b_config.lune_version or config.lune_version
   b_config.name = b_config.name or manifest.name
 
-  print("Bundling files...")
-  local bundled = bundler.bundle((manifest.main :: any).bin or manifest.main)
-  print("Compiling files...")
-  local bytecode = luau.compile(bundled, {
+  output.write("Bundling files...")
+  local bundleRes = bundler.bundle((manifest.main :: any).bin or manifest.main)
+
+  output.write("Comping files...")
+  local bytecode = luau.compile(bundleRes, {
     optimizationLevel = b_config.optimization_level,
     debugLevel = b_config.debug_level,
     coverageLevel = b_config.coverage_level,
   })
-
   local out_name = b_config.name
   local target = b_config.target
 
+  fs.writeFile(`./dist/{out_name}.luau`, bundleRes)
+  fs.writeFile(`./dist/{out_name}.luauc`, bytecode)
+
   if table.find(targets, target :: string) then
-    local function create_release(bytecode: string, os: string, arch: string)
+    local function create_release(os: string, arch: string)
       local ext = if os == "windows" then ".exe" else ""
       local name = if target == "all" then `./dist/{out_name}-{os}-{arch}{ext}` else `./dist/{out_name}{ext}`
 
@@ -137,13 +220,9 @@ function build.build(mode: "dev" | "release"?)
     end
 
     if target == "all" then
-      fs.writeFile(`./dist/{out_name}.luau`, bundled)
-      fs.writeFile(`./dist/{out_name}.luauc`, bytecode)
-
-      create_release(bytecode, "windows", "x86_64")
-      create_release(bytecode, "linux", "x86_64")
+      create_release("linux", "x86_64")
     else
-      create_release(bytecode, unpack(string.split(target :: string, "-")))
+      create_release(unpack(string.split(target :: string, "-")))
     end
 
     output.write("Building complete.")

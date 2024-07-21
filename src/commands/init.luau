@@ -1,16 +1,17 @@
-local stdio = require("@lune/stdio")
-local Command = require("@deps/commander").Command
-local fs = require("@lune/fs")
+local Commander = require("../dependencies/commander")
+local manifest_helper = require("../libs/manifest_helper")
+local package_helper = require("../libs/package_helper")
 local serde = require("@lune/serde")
 local std = require("@pkg/std")
+local stdio = require("@lune/stdio")
+local t = require("../types")
+
 local os = std.os
 local path = std.path
 local process = std.process
+local fs = std.fs
 
-local t = require("../types")
-
-local manifest_helper = require("../libs/manifest_helper")
-local package_helper = require("../libs/package_helper")
+local Command = Commander.Command
 
 local command = Command.new("init")
   :aliases({ "create", "innit" })

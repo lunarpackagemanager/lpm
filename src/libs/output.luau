@@ -1,10 +1,13 @@
 --!nolint
 --!nocheck
 
-local process = require("@lune/process")
+local serde = require("@lune/serde")
+local std = require("@pkg/std")
 local stdio = require("@lune/stdio")
 
 local config = require("../config")
+
+local process = std.process
 
 local LEADER = "  "
 
@@ -49,9 +52,12 @@ function output.write_removable(message: string): () -> ()
   end
 end
 
-function output.write(message: string)
+function output.write(message: string | any)
   if _G.LPM_OUTPUT_MODE == "CLI" then
-    stdio.write(LEADER .. message .. "\n")
+    if typeof(message) == "table" then
+      message = serde.encode("json", message, true)
+    end
+    process.stdout.write(message .. "\n")
   end
 end
 
