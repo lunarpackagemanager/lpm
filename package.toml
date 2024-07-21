@@ -15,7 +15,6 @@ optimization_level = 2
 
 [dependencies]
 libutil = "0.1.2"
-std = "0.1.4"
 zzlib = "0.1.0"
 
 [dev_dependencies]

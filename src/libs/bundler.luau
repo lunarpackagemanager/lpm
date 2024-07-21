@@ -17,8 +17,6 @@ local bundler = {}
 
 local WIDTH = 100
 
--- Yes
-
 local BUNDLE_INDEX = [==[
 --[=[
   LPM Bundler

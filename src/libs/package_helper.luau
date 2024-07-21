@@ -1,5 +1,6 @@
 local config = require("../config")
 local manifest_helper = require("./manifest_helper")
+local net = require("@lune/net")
 local output = require("./output")
 local resolver = require("./resolver")
 local serde = require("@lune/serde")
@@ -171,6 +172,15 @@ function package_handler.treeshake()
   end)
 end
 
+function package_handler.get_latest_tag(package_name: string): string
+  local repo_url = `https://api.github.com/repos/lune-package/{package_name}/tags`
+
+  local res = net.request({ method = "GET", url = repo_url })
+  local data = serde.decode("json", res.body)
+
+  return data[1].name
+end
+
 function package_handler.install_package(identifier: string, options: InstallPackageOptions?, previous: string?)
   local options = options or {} :: InstallPackageOptions
 
@@ -183,6 +193,11 @@ function package_handler.install_package(identifier: string, options: InstallPac
   assert(read_ok and manifest and commit, "Package manifest not found")
 
   assert(package_data.valid, "Invalid package identifier provided")
+
+  if package_data.ref == "latest" then
+    print("latest")
+    package_data.ref = package_handler.get_latest_tag(package_data.name)
+  end
 
   if options.add_dependency then
     local is_dev_dep = manifest.dev_dependencies[package_data.name]
