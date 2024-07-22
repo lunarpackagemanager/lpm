@@ -1,5 +1,6 @@
 local Ansis = require("./ansis")
 local libutil = require("@pkg/libutil")
+local output = require("./output")
 local Table = libutil.table
 
 export type ReprOptions = {
@@ -8,19 +9,17 @@ export type ReprOptions = {
   pretty: boolean?,
   semicolons: boolean?,
   sortKeys: boolean?,
-  console: boolean?,
 }
 
 local DEFAULT_SETTINGS = {
   pretty = true,
   tabs = false,
   semicolons = false,
-  spaces = 4,
+  spaces = 2,
   sortKeys = true,
-  console = false,
 }
 
-local keywords = {
+local LUA_KEYWORDS = {
   ["and"] = true,
   ["break"] = true,
   ["do"] = true,
@@ -45,26 +44,34 @@ local keywords = {
 }
 
 local function isLuaIdentifier<T>(str: T)
-  if type(str) ~= "string" then
-    return false
+  return not (
+    type(str) ~= "string"
+    or #str == 0
+    or string.find(str, "[^%d%a_]")
+    or tonumber(string.sub(str, 1, 1))
+    or LUA_KEYWORDS[str]
+  )
+end
+
+local function GetFloat(num: number): string
+  local String = tostring(num)
+  if tonumber(String) == num then
+    return String
+  else
+    for Index = 15, 99 do
+      String = string.format("%." .. Index .. "f", num)
+      if tonumber(String) == num then
+        return String
+      end
+    end
+
+    error("Something failed?", 2)
   end
-  -- must be nonempty
-  if str:len() == 0 then
-    return false
-  end
-  -- can only contain a-z, A-Z, 0-9 and underscore
-  if str:find("[^%d%a_]") then
-    return false
-  end
-  -- cannot begin with digit
-  if tonumber(str:sub(1, 1)) then
-    return false
-  end
-  -- cannot be keyword
-  if keywords[str] then
-    return false
-  end
-  return true
+end
+
+local function IntegerOrFloat(num: number)
+  num = tonumber(num) :: number
+  return num % 1 == 0 and string.format("%d", num) or GetFloat(num)
 end
 
 local Colors = {
@@ -73,6 +80,15 @@ local Colors = {
   ["nil"] = Ansis.hex("#f9e2af"),
   string = Ansis.hex("#a6da95"),
 }
+
+local function escape_special_chars(str: string)
+  return str:gsub("\\", "\\\\"):gsub("\n", "\\n")
+end
+
+local function safe_string_format(format: string, str: string)
+  local escaped_str = escape_special_chars(str)
+  return string.format(format, escaped_str)
+end
 
 local INDENT
 local shown
@@ -85,7 +101,7 @@ local function repr<T>(value: T, reprOptions: ReprOptions?): string
     INDENT = "\t"
   end
 
-  local v = value --args[1]
+  local v = value
   local tabs = string.rep(INDENT, depth)
 
   if depth == 0 then
@@ -93,7 +109,7 @@ local function repr<T>(value: T, reprOptions: ReprOptions?): string
   end
 
   if typeof(v) == "string" then
-    return Colors.string(string.format("%s", v))
+    return Colors.string(safe_string_format("%q", v))
   elseif typeof(v) == "number" then
     if v == math.huge then
       return "math.huge"
@@ -101,7 +117,7 @@ local function repr<T>(value: T, reprOptions: ReprOptions?): string
     if v == -math.huge then
       return "-math.huge"
     end
-    return Colors.number(tostring(v))
+    return Colors.number(IntegerOrFloat(v))
   elseif typeof(v) == "boolean" then
     return Colors.boolean(tostring(v))
   elseif typeof(v) == "nil" then
@@ -114,27 +130,24 @@ local function repr<T>(value: T, reprOptions: ReprOptions?): string
     local str = "{" .. (reprSettings.pretty and ("\n" .. INDENT .. tabs) or "")
     local isArray = Table.isArray(v)
     if isArray then
-      if #v == 0 then
-      else
-        for i = 1, #v do
-          if i ~= 1 then
-            str ..= (reprSettings.semicolons and ";" or ",") .. (reprSettings.pretty and ("\n" .. INDENT .. tabs) or " ")
-          end
-          depth = depth + 1
-          str = str .. repr(v[i])
-          depth = depth - 1
+      for index, value in ipairs(v) do
+        if index ~= 1 then
+          str ..= (reprSettings.semicolons and ";" or ",") .. (reprSettings.pretty and ("\n" .. INDENT .. tabs) or " ")
         end
+        depth += 1
+        str ..= repr(value, reprSettings)
+        depth -= 1
       end
     else
       local keyOrder = {}
       local keyValueStrings = {}
-      for k, v in v do
-        depth = depth + 1
-        local kStr = isLuaIdentifier(k) and ("" .. k .. "") or ("" .. repr(k) .. "")
-        local vStr = repr(v)
+      for key, value in next, v do
+        depth += 1
+        local kStr = isLuaIdentifier(key) and key or repr(key, reprSettings)
+        local vStr = repr(value, reprSettings)
         table.insert(keyOrder, kStr)
         keyValueStrings[kStr] = vStr
-        depth = depth - 1
+        depth -= 1
       end
       if reprSettings.sortKeys then
         table.sort(keyOrder)
@@ -150,12 +163,11 @@ local function repr<T>(value: T, reprOptions: ReprOptions?): string
     end
     shown[v] = false
     if reprSettings.pretty then
-      str = str .. "\n" .. tabs
+      str ..= "\n" .. tabs
     end
-    str = str .. "}"
-    return str
+    return str .. "}"
   else
-    return "<" .. type(v) .. ">"
+    return "<" .. typeof(v) .. ">"
   end
 end
 
