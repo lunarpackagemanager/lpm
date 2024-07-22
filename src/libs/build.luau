@@ -22,54 +22,19 @@ local targets = {
   "macos-aarch64",
   "linux-x86_64",
   "macos-x86_64",
-  "all",
 }
 
-export type Rule = {
-  identifier: string,
-  rule: string,
-  value: string,
-}
+export type BuildTarget = "all" | "linux-x86_64" | "linux-aarch64" | "windows-x86_64"
+export type BuildMode = "dev" | "release"
 
-export type BundleConfig = {
-  bundle: {
-    excludes: { string },
-    modules_identifier: string,
-    require_mode: {
-      name: string,
-      sources: {
-        [string]: string,
-      },
-    },
-  },
-  generator: string,
-  rules: { string | Rule },
-}
-
-local bundling: BundleConfig = {
-  bundle = {
-    excludes = {
-      "@lune/**",
-    },
-    modules_identifier = "__LPM_BUNDLE_MODULES",
-    require_mode = {
-      name = "path",
-      sources = {
-        ["@pkg"] = "./lune_modules/",
-      },
-    },
-  },
-  generator = "readable",
-  rules = {
-    "remove_types",
-    "compute_expression",
-    "remove_unused_if_branch",
-    {
-      identifier = "VERSION",
-      rule = "inject_global_value",
-      value = "0.1.0",
-    },
-  },
+export type BuildOverride = {
+  target: string?,
+  optimization_level: number?,
+  coverage_level: number?,
+  debug_level: number?,
+  dev: boolean?,
+  zip: boolean?,
+  comment: boolean?,
 }
 
 local MAGIC = "cr3sc3nt"
@@ -109,38 +74,6 @@ function build.get_remote_runtime(os: string, arch: string, version: string?): s
   return runtime
 end
 
-function build.get_bundler_runtime(os: string, arch: string): string
-  local latest_release = net.request(`https://api.github.com/repos/seaofvoices/darklua/releases/latest`)
-  local cache_name = `{GLOBAL_DIR}/bin/darklua-{os}-{arch}`
-
-  if fs.isFile(cache_name) then
-    return cache_name
-  end
-
-  local url =
-    string.format("https://github.com/seaofvoices/darklua/releases/download/v0.13.1/darklua-%s-%s.zip", os, arch)
-
-  local container = net.request(url)
-
-  local runtime = zip.unzip(container.body, `darklua{if os == "windows" then ".exe" else ""}`)
-  fs.writeFile(cache_name, runtime)
-
-  process.spawn("chmod", { "+x", cache_name })
-
-  return cache_name
-end
-
-function build.bundle(os: string, arch: string, main: string, out_name: string)
-  local bundler_runtime = build.get_bundler_runtime(os, arch)
-  fs.writeFile(".darklua.json", serde.encode("json", bundling))
-  process.spawn(`{bundler_runtime}`, { "process", main, `./dist/{out_name}.luau`, "--config", ".darklua.json" })
-
-  local bundleResult = fs.readFile(`./dist/{out_name}.luau`)
-  fs.removeFile(".darklua.json")
-
-  return bundleResult
-end
-
 local function compress(a: string, b: string)
   if process.os == "windows" then
     run(`powershell Compress-Archive {a} {b} -Force`)
@@ -149,17 +82,25 @@ local function compress(a: string, b: string)
   end
 end
 
-function build.build(mode: "dev" | "release"?)
-  if fs.isDir("./dist/") then
-    fs.removeDir("./dist/")
+local function cleanFolders(path: string)
+  if fs.isDir(path) then
+    fs.removeDir(path)
   end
-  fs.writeDir("./dist/")
+  fs.writeDir(path)
+end
+
+function build.build(mode: BuildMode, override: BuildOverride)
+  cleanFolders("./release")
+  cleanFolders("./dist")
 
   local DEFAULT_OPT_LVL = if mode == "release" then 2 else 1
   local DEFAULT_DBG_LVL = if mode == "release" then 0 else 1
   local DEFAULT_CV_LVL = if mode == "release" then 0 else 0
-  local DEFAULT_TARGET = if mode == "release" then "all" else "dev"
+  local DEFAULT_TARGET = if mode == "release" then "all" else `{process.os}-{process.arch}`
   local DEFAULT_ZIP = if mode == "release" then true else false
+  local DEFAULT_DEBUG = if mode == "dev" then false else true
+
+  local DEBUG = mode == "dev"
 
   local ok, manifest = manifest_helper.read(false)
   assert(ok and manifest, "No manifest")
@@ -176,16 +117,16 @@ function build.build(mode: "dev" | "release"?)
     b_config = manifest.build_config or b_config
   end
 
-  b_config.optimization_level = b_config.optimization_level or DEFAULT_OPT_LVL
-  b_config.coverage_level = b_config.coverage_level or DEFAULT_CV_LVL
-  b_config.debug_level = b_config.debug_level or DEFAULT_DBG_LVL
-  b_config.target = b_config.target or DEFAULT_TARGET :: any
-  b_config.zip = b_config.zip or DEFAULT_ZIP
+  b_config.optimization_level = override.optimization_level or b_config.optimization_level or DEFAULT_OPT_LVL
+  b_config.coverage_level = override.coverage_level or b_config.coverage_level or DEFAULT_CV_LVL
+  b_config.debug_level = override.coverage_level or b_config.debug_level or DEFAULT_DBG_LVL
+  b_config.target = override.target or b_config.target or DEFAULT_TARGET :: any
+  b_config.zip = override.zip or b_config.zip or DEFAULT_ZIP
   b_config.lune_version = b_config.lune_version or config.lune_version
   b_config.name = b_config.name or manifest.name
 
   output.write("Bundling files...")
-  local bundleRes = bundler.bundle((manifest.main :: any).bin or manifest.main)
+  local bundleRes = bundler.bundle((manifest.main :: any).bin or manifest.main, override.comment)
 
   output.write("Comping files...")
   local bytecode = luau.compile(bundleRes, {
@@ -197,36 +138,57 @@ function build.build(mode: "dev" | "release"?)
   local target = b_config.target
 
   fs.writeFile(`./dist/{out_name}.luau`, bundleRes)
-  fs.writeFile(`./dist/{out_name}.luauc`, bytecode)
+  fs.writeFile(`./release/{out_name}.luauc`, bytecode)
 
-  if table.find(targets, target :: string) then
-    local function create_release(os: string, arch: string)
-      local ext = if os == "windows" then ".exe" else ""
-      local name = if target == "all" then `./dist/{out_name}-{os}-{arch}{ext}` else `./dist/{out_name}{ext}`
+  local function create_release(os: string, arch: string)
+    local ext = if os == "windows" then ".exe" else ""
+    local name = `./release/{out_name}-{os}-{arch}{ext}`
 
-      output.write(`Getting remote runtime for {os}-{arch}.`)
-      local runtime = build.get_remote_runtime(os, arch, b_config.lune_version)
+    output.write(`Getting remote runtime for {os}-{arch}.`)
+    local runtime = build.get_remote_runtime(os, arch, b_config.lune_version)
 
-      output.write(`Creating binary for {os}-{arch}`)
+    output.write(`Creating binary for {os}-{arch}`)
 
-      fs.writeFile(name, build.patch_binary(runtime, bytecode))
+    fs.writeFile(name, build.patch_binary(runtime, bytecode))
 
-      if b_config.zip then
-        output.write(`Creating .zip for {os}-{arch}`)
-        compress(name, `./dist/{out_name}-{os}-{arch}`)
+    if b_config.zip then
+      output.write(`Creating .zip for {os}-{arch}`)
+      compress(name, `./release/{out_name}-{os}-{arch}`)
+    end
+
+    if DEBUG and os == process.os and arch == process.arch then
+      fs.copy(name, `./release/{out_name}`)
+      if os ~= "windows" then
+        run(`chmod 755 ./release/{out_name}`)
       end
-
-      output.write(`Created binary for {os}-{arch}.`)
     end
 
-    if target == "all" then
-      create_release("linux", "x86_64")
-    else
-      create_release(unpack(string.split(target :: string, "-")))
-    end
-
-    output.write("Building complete.")
+    output.write(`Created binary for {os}-{arch}.`)
   end
+
+  if target ~= "all" and not table.find(targets, target :: string) then
+    return output.write("Build failed.")
+  end
+
+  if target == "all" then
+    for _, t in targets do
+      local targetData = string.split(t :: string, "-")
+      create_release(targetData[1], targetData[2])
+    end
+  else
+    local targetData = string.split(target :: string, "-")
+    create_release(targetData[1], targetData[2])
+  end
+
+  output.write(`Exporting bytecode`)
+  fs.writeFile(`./release/{out_name}.luauc`, bytecode)
+  output.write(`Exported bytecode`)
+
+  if b_config.zip then
+    compress(`./release/{out_name}.luauc`, `./release/{out_name}-bytecode`)
+  end
+
+  return output.write("Building complete.")
 end
 
 return build
