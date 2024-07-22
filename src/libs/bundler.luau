@@ -109,9 +109,9 @@ local function is_require(call): (boolean, string?)
   return true, path, { start = start, finish = finish }, call
 end
 
-local function gsub_alias(path: string, aliases: { [string]: string }): string
+local function fix_path(path: string, aliases: { [string]: string }, source_dir: string): string
   if path:sub(1, 1) == "@" then
-    path = path:gsub("^(@.-)/", function(alias)
+    return string.gsub(path, "^(@.-)/", function(alias)
       local new_path = aliases[string.sub(alias, 2, #alias)]
 
       if new_path:sub(#new_path, #new_path) ~= "/" then
@@ -122,7 +122,15 @@ local function gsub_alias(path: string, aliases: { [string]: string }): string
     end)
   end
 
-  return path
+  return source_dir .. path
+end
+
+local function folderOf(file: string): string
+  file = sys.normalisePath(file)
+  local parts = string.split(file, "/")
+  table.remove(parts, #parts)
+
+  return table.concat(parts, "/") .. "/"
 end
 
 local function get_lines(str: string): number
@@ -181,7 +189,7 @@ local function delete_comments(str: string, positions: CharPositions)
   return table.concat(lines)
 end
 
-function bundler.bundle(entrypoint_path: string, extra_headers: { string }?): string
+function bundler.bundle(entrypoint_path: string, keep_comment: boolean?, extra_headers: { string }?): string
   local luaurc = sys.luaurc() :: any
   local aliases = luaurc.aliases or {}
   local files = {}
@@ -189,7 +197,8 @@ function bundler.bundle(entrypoint_path: string, extra_headers: { string }?): st
 
   local function process_file(file_path: string)
     local source = fs.readFile(file_path)
-    local source_dir = path.dirname(file_path) .. "/"
+
+    local source_dir = folderOf(file_path)
     local original_src_hash = serde.hash("sha256", source)
     local write_offset = 0
 
@@ -205,22 +214,32 @@ function bundler.bundle(entrypoint_path: string, extra_headers: { string }?): st
       return files[original_src_hash]
     end
 
-    local DeletedCommentPositions: CharPositions = {}
-    local function recurseComment(tbl: any)
-      if tbl.kind == "comment" then
-        local span = tbl.span
-        table.insert(DeletedCommentPositions, {
-          start_line = span.start.line,
-          start_col = span.start.char,
-          end_line = span.finish.line,
-          end_col = span.finish.char,
-          start_byte = span.start.byte,
-          end_byte = span.finish.byte,
-        })
-      else
-        for _, v in tbl do
-          if typeof(v) == "table" then
-            recurseComment(v)
+    local function handle_require(path: string, span: luaup.Span)
+      if string.sub(path, 1, 6) ~= "@lune/" then
+        path = fix_path(path, aliases, source_dir)
+
+        for _, ext in extensions do
+          local final_path = path .. ext
+          if fs.isFile(final_path) then
+            local processed = process_file(final_path)
+
+            local hash = processed.hash
+            local new_require = ` __LPM_REQUIRE("{hash}")`
+
+            local start_byte = span.start.byte
+            local stop_byte = span.finish.byte
+
+            local original_size = stop_byte - start_byte
+            local new_size = #new_require
+            local offset = new_size - original_size
+
+            local pre = string.sub(obj.src, 1, start_byte - 1 + write_offset)
+            local suf = string.sub(obj.src, stop_byte + 1 + write_offset, #obj.src)
+            obj.src = pre .. new_require .. suf
+
+            write_offset += offset - 1
+
+            break
           end
         end
       end
@@ -231,34 +250,7 @@ function bundler.bundle(entrypoint_path: string, extra_headers: { string }?): st
         local ok, path, span = is_require(tbl.call)
 
         if ok then
-          if path:sub(1, 6) ~= "@lune/" then
-            path = gsub_alias(path, aliases)
-
-            for _, ext in extensions do
-              local final_path = source_dir .. path .. ext
-              if fs.isFile(final_path) then
-                local processed = process_file(final_path)
-
-                local hash = processed.hash
-                local new_require = ` __LPM_REQUIRE("{hash}")`
-
-                local start_byte = span.start.byte
-                local stop_byte = span.finish.byte
-
-                local original_size = stop_byte - start_byte
-                local new_size = #new_require
-                local offset = new_size - original_size
-
-                local pre = obj.src:sub(1, start_byte - 1 + write_offset)
-                local suf = obj.src:sub(stop_byte + 1 + write_offset, #obj.src)
-                obj.src = pre .. new_require .. suf
-
-                write_offset += offset - 1
-
-                break
-              end
-            end
-          end
+          handle_require(path, span)
         else
           if tbl.call.lhs then
             recurse(tbl.call.lhs)
@@ -273,14 +265,37 @@ function bundler.bundle(entrypoint_path: string, extra_headers: { string }?): st
       end
     end
 
+    local function recurseComment(tbl: any, data: CharPositions?)
+      data = data or {} :: CharPositions
+      if tbl.kind == "comment" then
+        local span = tbl.span
+        table.insert(data, {
+          start_line = span.start.line,
+          start_col = span.start.char,
+          end_line = span.finish.line,
+          end_col = span.finish.char,
+          start_byte = span.start.byte,
+          end_byte = span.finish.byte,
+        })
+      else
+        for _, v in tbl do
+          if typeof(v) == "table" then
+            recurseComment(v, data)
+          end
+        end
+      end
+
+      return data
+    end
+
     files[original_src_hash] = obj
 
     local parsed = luaup.ast.parse(source)
     recurse(parsed.ast)
 
-    if obj.src then
+    if not keep_comment then
       local originalParsed = luaup.ast.parse(obj.src)
-      recurseComment(originalParsed.ast)
+      local DeletedCommentPositions = recurseComment(originalParsed.ast)
       if #DeletedCommentPositions > 0 then
         obj.src = delete_comments(obj.src, DeletedCommentPositions)
       end
@@ -296,22 +311,29 @@ function bundler.bundle(entrypoint_path: string, extra_headers: { string }?): st
 
   local function write_header(file)
     local path = sys.normalisePath(file.path)
-    local name = path:split("/")
+    local name = string.split(path, "/")
     bundled ..= header(
       `\n{name[#name]}\n\nPath: {path}\nHash: {file.hash}\nCreated: {file.metadata.createdAt:toIsoDate()}\nModified: {file.metadata.modifiedAt:toIsoDate()}\n`
     )
   end
 
   for hash, file in files do
-    table.insert(index, {
-      ln = get_lines(bundled),
-      file = file,
-    })
-    write_header(file)
-    bundled ..= `\n__LPM_MODULES["{hash}"] = function()\n\n{file.src}\n\nend\n\n\n`
+    if keep_comment then
+      table.insert(index, {
+        ln = get_lines(bundled),
+        file = file,
+      })
+      write_header(file)
+    end
+    bundled ..= `\n__LPM_MODULES["{hash}"] = function()\n\n{file.src}\n\nend\n\n`
   end
 
   bundled ..= entrypoint.src
+
+  if not keep_comment then
+    local INDEX = `--!nocheck\n--!nolint\n`
+    return INDEX .. bundled
+  end
 
   local index_str = ""
 
@@ -321,7 +343,7 @@ function bundler.bundle(entrypoint_path: string, extra_headers: { string }?): st
     index_str ..= `\n  * Line {entry.ln + offset} = {sys.normalisePath(entry.file.path)} ({entry.file.hash})`
   end
 
-  return BUNDLE_INDEX:format(index_str) .. bundled
+  return string.format(BUNDLE_INDEX, index_str) .. bundled
 end
 
 return bundler
