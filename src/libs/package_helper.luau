@@ -1,6 +1,5 @@
 local config = require("../config")
 local manifest_helper = require("./manifest_helper")
-local net = require("@lune/net")
 local output = require("./output")
 local resolver = require("./resolver")
 local serde = require("@lune/serde")
@@ -9,6 +8,7 @@ local t = require("../types")
 
 local fs = std.fs
 local process = std.process
+local net = std.net
 
 local package_handler = {}
 
@@ -175,7 +175,7 @@ end
 function package_handler.get_latest_tag(package_name: string): string
   local repo_url = `https://api.github.com/repos/lune-package/{package_name}/tags`
 
-  local res = net.request({ method = "GET", url = repo_url })
+  local res = net.fetch({ method = "GET", url = repo_url })
   local data = serde.decode("json", res.body)
 
   return data[1].name
