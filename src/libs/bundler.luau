@@ -1,16 +1,16 @@
 --!nocheck
 
 local config = require("../config")
-local fs = require("@lune/fs")
 local output = require("./output")
 local serde = require("@lune/serde")
 local std = require("@pkg/std")
 local Table = require("@pkg/libutil").table
-local luaup = require("../dependencies/luaup")
 
 local path = std.path
 local sys = std.sys
 local os = std.os
+local fs = std.fs
+local luau = std.luau
 
 local GLOBAL_DIR = `{os.homedir()}/.{config.name.long:lower()}`
 local bundler = {}
@@ -213,7 +213,7 @@ function bundler.bundle(entrypoint_path: string, keep_comment: boolean?, extra_h
       return files[original_src_hash]
     end
 
-    local function handle_require(path: string, span: luaup.Span)
+    local function handle_require(path: string, span: any)
       if string.sub(path, 1, 6) ~= "@lune/" then
         path = fix_path(path, aliases, source_dir)
 
@@ -289,11 +289,11 @@ function bundler.bundle(entrypoint_path: string, keep_comment: boolean?, extra_h
 
     files[original_src_hash] = obj
 
-    local parsed = luaup.ast.parse(source)
+    local parsed = luau.parse(source)
     recurse(parsed.ast)
 
     if not keep_comment then
-      local originalParsed = luaup.ast.parse(obj.src)
+      local originalParsed = luau.parse(obj.src)
       local DeletedCommentPositions = recurseComment(originalParsed.ast)
       if #DeletedCommentPositions > 0 then
         obj.src = delete_comments(obj.src, DeletedCommentPositions)
