@@ -1,4 +1,3 @@
-local fs = require("@lune/fs")
 local serde = require("@lune/serde")
 
 local config = require("../config")
@@ -10,6 +9,7 @@ local std = require("@pkg/std")
 local process = std.process
 local os = std.os
 local path = std.path
+local fs = std.fs
 
 local MANIFEST_PATH = `./package.toml`
 
