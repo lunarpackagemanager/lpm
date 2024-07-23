@@ -125,14 +125,6 @@ local function fix_path(path: string, aliases: { [string]: string }, source_dir:
   return source_dir .. path
 end
 
-local function folderOf(file: string): string
-  file = sys.normalisePath(file)
-  local parts = string.split(file, "/")
-  table.remove(parts, #parts)
-
-  return table.concat(parts, "/") .. "/"
-end
-
 local function get_lines(str: string): number
   return #str:split("\n")
 end
@@ -197,7 +189,7 @@ function bundler.bundle(entrypoint_path: string, keep_comment: boolean?, extra_h
   local function process_file(file_path: string)
     local source = fs.readFile(file_path)
 
-    local source_dir = folderOf(file_path)
+    local source_dir = path.dirname(file_path) .. "/"
     local original_src_hash = serde.hash("sha256", source)
     local write_offset = 0
 
