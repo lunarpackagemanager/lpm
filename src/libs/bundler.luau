@@ -63,12 +63,12 @@ local function readFile(path: string)
 end
 
 local function header(text: string): string
-  local v_ln = ("-"):rep(WIDTH)
+  local v_ln = string.rep("-", WIDTH)
 
   local out = ""
-  for _, v in text:split("\n") do
+  for _, v in string.split(text, "\n") do
     local t = "--  " .. v
-    local ws = (" "):rep(WIDTH - 2 - #t)
+    local ws = string.rep(" ", WIDTH - 2 - #t)
     out ..= t .. ws .. "--\n"
   end
 
@@ -143,12 +143,11 @@ local function delete_substring_by_bytes(str: string, start_byte: number, end_by
   end_byte = math.min(end_byte, #str)
 
   -- Return the modified string with the specified byte range removed
-  return str:sub(0, start_byte - 1) .. str:sub(end_byte + 1)
+  return string.sub(str, 0, start_byte - 1) .. string.sub(str, end_byte + 1)
 end
 
 local function normalize_line_endings(str)
-  -- Replace \r\n or \r with \n
-  return str:gsub("\r\n", "\n"):gsub("\r", "\n")
+  return string.gsub(string.gsub(str, "\r\n", "\n"), "\r", "\n")
 end
 
 local function remove_empty_lines(str)
@@ -177,7 +176,7 @@ local function delete_comments(str: string, positions: CharPositions)
     str = delete_substring_by_bytes(str, start_byte, end_byte)
   end
 
-  str = str:gsub("\r\n", "\n"):gsub("\r", "\n")
+  str = normalize_line_endings(str)
 
   local lines = {}
   for line in string.gmatch(str, "([^\n]*\n?)") do
