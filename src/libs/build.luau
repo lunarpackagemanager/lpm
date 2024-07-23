@@ -1,6 +1,5 @@
 local bundler = require("./bundler")
 local config = require("../config")
-local luau = require("@lune/luau")
 local manifest_helper = require("./manifest_helper")
 local net = require("@lune/net")
 local output = require("./output")
@@ -11,6 +10,7 @@ local zip = require("@pkg/zzlib")
 local fs = std.fs
 local process = std.process
 local os = std.os
+local luau = std.luau
 
 local GLOBAL_DIR = `{os.homedir()}/.{config.name.long:lower()}`
 
