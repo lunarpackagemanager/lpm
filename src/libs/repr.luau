@@ -43,7 +43,7 @@ local LUA_KEYWORDS = {
   ["while"] = true,
 }
 
-local function isLuaIdentifier<T>(str: T)
+local function is_lua_identifier<T>(str: T)
   return not (
     type(str) ~= "string"
     or #str == 0
@@ -53,7 +53,7 @@ local function isLuaIdentifier<T>(str: T)
   )
 end
 
-local function GetFloat(num: number): string
+local function get_float(num: number): string
   local String = tostring(num)
   if tonumber(String) == num then
     return String
@@ -69,9 +69,9 @@ local function GetFloat(num: number): string
   end
 end
 
-local function IntegerOrFloat(num: number)
+local function integer_or_float(num: number)
   num = tonumber(num) :: number
-  return num % 1 == 0 and string.format("%d", num) or GetFloat(num)
+  return num % 1 == 0 and string.format("%d", num) or get_float(num)
 end
 
 local Colors = {
@@ -101,36 +101,36 @@ local function repr<T>(value: T, reprOptions: ReprOptions?): string
     INDENT = "\t"
   end
 
-  local v = value
+  local newValue = value
   local tabs = string.rep(INDENT, depth)
 
   if depth == 0 then
     shown = {}
   end
 
-  if typeof(v) == "string" then
-    return Colors.string(safe_string_format("%q", v))
-  elseif typeof(v) == "number" then
-    if v == math.huge then
+  if typeof(newValue) == "string" then
+    return Colors.string(safe_string_format("%q", newValue))
+  elseif typeof(newValue) == "number" then
+    if newValue == math.huge then
       return "math.huge"
     end
-    if v == -math.huge then
+    if newValue == -math.huge then
       return "-math.huge"
     end
-    return Colors.number(IntegerOrFloat(v))
-  elseif typeof(v) == "boolean" then
-    return Colors.boolean(tostring(v))
-  elseif typeof(v) == "nil" then
+    return Colors.number(integer_or_float(newValue))
+  elseif typeof(newValue) == "boolean" then
+    return Colors.boolean(tostring(newValue))
+  elseif typeof(newValue) == "nil" then
     return Colors["nil"]("nil")
-  elseif typeof(v) == "table" then
-    if shown[v] then
+  elseif typeof(newValue) == "table" then
+    if shown[newValue] then
       return "{CYCLIC}"
     end
-    shown[v] = true
+    shown[newValue] = true
     local str = "{" .. (reprSettings.pretty and ("\n" .. INDENT .. tabs) or "")
-    local isArray = Table.isArray(v)
+    local isArray = Table.isArray(newValue)
     if isArray then
-      for index, value in ipairs(v) do
+      for index, value in ipairs(newValue) do
         if index ~= 1 then
           str ..= (reprSettings.semicolons and ";" or ",") .. (reprSettings.pretty and ("\n" .. INDENT .. tabs) or " ")
         end
@@ -141,33 +141,36 @@ local function repr<T>(value: T, reprOptions: ReprOptions?): string
     else
       local keyOrder = {}
       local keyValueStrings = {}
-      for key, value in next, v do
+      local length = 0
+      for key, value in next, newValue do
         depth += 1
-        local kStr = isLuaIdentifier(key) and key or repr(key, reprSettings)
-        local vStr = repr(value, reprSettings)
-        table.insert(keyOrder, kStr)
-        keyValueStrings[kStr] = vStr
+        local keyString = is_lua_identifier(key) and key or repr(key, reprSettings)
+        local valueString = repr(value, reprSettings)
+
+        length += 1
+        keyOrder[length] = keyString
+        keyValueStrings[keyString] = valueString
         depth -= 1
       end
       if reprSettings.sortKeys then
         table.sort(keyOrder)
       end
       local first = true
-      for _, kStr in keyOrder do
+      for _, keyString in keyOrder do
         if not first then
           str ..= (reprSettings.semicolons and ";" or ",") .. (reprSettings.pretty and ("\n" .. INDENT .. tabs) or " ")
         end
-        str ..= string.format("%s = %s", kStr, keyValueStrings[kStr])
+        str ..= string.format("%s = %s", keyString, keyValueStrings[keyString])
         first = false
       end
     end
-    shown[v] = false
+    shown[newValue] = false
     if reprSettings.pretty then
       str ..= "\n" .. tabs
     end
     return str .. "}"
   else
-    return "<" .. typeof(v) .. ">"
+    return "<" .. typeof(newValue) .. ">"
   end
 end
 
