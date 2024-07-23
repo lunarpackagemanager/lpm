@@ -1,4 +1,3 @@
-local net = require("@lune/net")
 local output = require("./output")
 local std = require("@pkg/std")
 local t = require("../types")
