@@ -322,8 +322,8 @@ function bundler.bundle(entrypoint_path: string, keep_comment: boolean?, extra_h
   bundled ..= entrypoint.src
 
   if not keep_comment then
-    local INDEX = `--!nocheck\n--!nolint\n`
-    return INDEX .. bundled
+    BUNDLE_INDEX = `--!nocheck\n--!nolint\n`
+    return BUNDLE_INDEX .. bundled
   end
 
   local index_str = ""
