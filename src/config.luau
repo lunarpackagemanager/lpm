@@ -4,7 +4,7 @@ return {
     long = "lpm",
   },
   author = "lune-package",
-  version = "0.1.4",
+  version = "0.1.0",
   lune_version = "0.8.6",
   colour_theme = {
     author = { "blue" },
