@@ -62,4 +62,15 @@ export type Semver = {
   build_identifiers: { string }?,
 }
 
+export type Dependency = {
+  version: string,
+  dependencies: { [string]: Dependency }?,
+}
+
+export type RootDependency = {
+  name: string,
+  version: string,
+  dependencies: { [string]: Dependency },
+}
+
 return {}
