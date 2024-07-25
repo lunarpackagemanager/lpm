@@ -77,7 +77,7 @@ function Opt.interface.new(flags: string, description: string?): Opt
   local self = (
     setmetatable(option, {
       __index = Opt.prototype,
-      __tostring = function(self: Opt)
+      __tostring = function(_)
         return String.format("Opt<>")
       end,
     })
@@ -93,7 +93,7 @@ function Opt.prototype.default(self: Opt, value: any, description: string?): Opt
   return self
 end
 
-function Opt.prototype.hide(self: Opt, value: any, hide: boolean?): Opt
+function Opt.prototype.hide(self: Opt, hide: boolean?): Opt
   local actualHide: boolean = hide == nil and true or hide :: boolean
   self.hidden = actualHide
 

@@ -2,7 +2,6 @@ local types = require("./types")
 
 local libutil = require("@pkg/libutil")
 
-local Table = libutil.table
 local String = libutil.string
 
 type Arg = types.Arg
