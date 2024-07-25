@@ -9,7 +9,6 @@ local Table = libutil.table
 
 local fs = std.fs
 local process = std.process
-local sys = std.sys
 local path = std.path
 
 local script_manager = {}
@@ -19,10 +18,7 @@ function script_manager.execute_file(file: string)
   table.remove(args, 1)
   table.freeze(args)
 
-  local fake_process = {}
-  for k, v in pairs(process) do
-    fake_process[k] = v
-  end
+  local fake_process = Table.copy(process, true)
 
   fake_process.args = args
 
@@ -48,7 +44,7 @@ function script_manager.get_scripts(
     end
   end
   local scripts = fs.readDir(`{process.cwd()}/scripts/`)
-  for i, script in scripts do
+  for _, script in scripts do
     local script_path = `{process.cwd()}/scripts/{script}`
     local ext = path.extname(script)
     local basename = path.basename(script_path, ext)
@@ -70,7 +66,7 @@ function script_manager.run_script(name: string)
 end
 
 function script_manager.run_hook(name: string)
-  local args = Table.copy(process.args)
+  local _args = Table.copy(process.args, true)
   local scripts = script_manager.get_scripts(true)
 
   if scripts[name] then
