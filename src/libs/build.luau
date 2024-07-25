@@ -3,7 +3,6 @@ local config = require("../config")
 local manifest_helper = require("./manifest_helper")
 local net = require("@lune/net")
 local output = require("./output")
-local serde = require("@lune/serde")
 local std = require("@pkg/std")
 local zip = require("@pkg/zzlib")
 
@@ -98,7 +97,6 @@ function build.build(mode: BuildMode, override: BuildOverride)
   local DEFAULT_CV_LVL = if mode == "release" then 0 else 0
   local DEFAULT_TARGET = if mode == "release" then "all" else `{process.os}-{process.arch}`
   local DEFAULT_ZIP = if mode == "release" then true else false
-  local DEFAULT_DEBUG = if mode == "dev" then false else true
 
   local DEBUG = mode == "dev"
 

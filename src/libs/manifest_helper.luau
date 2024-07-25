@@ -1,6 +1,5 @@
 local serde = require("@lune/serde")
 
-local config = require("../config")
 local output = require("./output")
 
 local t = require("../types")

@@ -1,10 +1,7 @@
 --!nocheck
 
-local config = require("../config")
-local output = require("./output")
 local serde = require("@lune/serde")
 local std = require("@pkg/std")
-local Table = require("@pkg/libutil").table
 
 local path = std.path
 local sys = std.sys
@@ -12,7 +9,6 @@ local os = std.os
 local fs = std.fs
 local luau = std.luau
 
-local GLOBAL_DIR = `{os.homedir()}/.{config.name.long:lower()}`
 local bundler = {}
 
 local WIDTH = 100
@@ -142,7 +138,7 @@ local function normalize_line_endings(str)
   return string.gsub(string.gsub(str, "\r\n", "\n"), "\r", "\n")
 end
 
-local function remove_empty_lines(str)
+local function _remove_empty_lines(str)
   local lines = {}
   for line in string.gmatch(str, "([^\n]*\n?)") do
     if #line > 1 then -- Keeps line if it's not just a newline character
@@ -180,14 +176,14 @@ local function delete_comments(str: string, positions: CharPositions)
   return table.concat(lines)
 end
 
-function bundler.bundle(entrypoint_path: string, keep_comment: boolean?, extra_headers: { string }?): string
+function bundler.bundle(entrypoint_path: string, keep_comment: boolean?): string
   local luaurc = sys.luaurc() :: any
   local aliases = luaurc.aliases or {}
   local files = {}
   local extensions = { "", ".lua", ".luau", "/init.lua", "/init.luau" }
 
   local function process_file(file_path: string)
-    local source = fs.readFile(file_path)
+    local source = readFile(file_path)
 
     local source_dir = path.dirname(file_path) .. "/"
     local original_src_hash = serde.hash("sha256", source)

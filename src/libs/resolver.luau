@@ -1,8 +1,5 @@
 local output = require("./output")
-local std = require("@pkg/std")
 local t = require("../types")
-
-local fs = std.fs
 
 local resolver = {}
 
