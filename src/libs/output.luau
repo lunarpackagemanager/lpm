@@ -42,13 +42,13 @@ local WARN_HEADER = output.format(config.colour_theme.warn :: any, "warn: ")
 
 function output.write_removable(message: string): () -> ()
   if _G.LPM_OUTPUT_MODE == "CLI" then
-    stdio.write(LEADER .. message)
+    process.stdout.write(LEADER .. message)
   end
 
   return function()
-    stdio.write(("\b"):rep(#(LEADER .. message)))
-    stdio.write((" "):rep(#(LEADER .. message)))
-    stdio.write(("\b"):rep(#(LEADER .. message)))
+    process.stdout.write(("\b"):rep(#(LEADER .. message)))
+    process.stdout.write((" "):rep(#(LEADER .. message)))
+    process.stdout.write(("\b"):rep(#(LEADER .. message)))
   end
 end
 
@@ -63,9 +63,9 @@ end
 
 function output.warn(message: string, secondary_message: string?)
   if _G.LPM_OUTPUT_MODE == "CLI" then
-    stdio.write(LEADER .. WARN_HEADER .. message .. "\n")
+    process.stdout.write(LEADER .. WARN_HEADER .. message .. "\n")
     if secondary_message then
-      stdio.write(LEADER .. secondary_message .. "\n")
+      process.stdout.write(LEADER .. secondary_message .. "\n")
     end
   else
     warn(message)
@@ -74,9 +74,9 @@ end
 
 function output.error(message: string, secondary_message: string?)
   if _G.LPM_OUTPUT_MODE == "CLI" then
-    stdio.ewrite(LEADER .. ERROR_HEADER .. message .. "\n")
+    process.stderr.write(LEADER .. ERROR_HEADER .. message .. "\n")
     if secondary_message then
-      stdio.ewrite(LEADER .. secondary_message .. "\n")
+      process.stderr.write(LEADER .. secondary_message .. "\n")
     end
     process.exit(1)
     error(message, 2)
@@ -93,7 +93,7 @@ end
 
 function output.header()
   if _G.LPM_OUTPUT_MODE == "CLI" then
-    stdio.write(
+    process.stdout.write(
       `{output.format(config.colour_theme.author :: any, config.author)}/{output.format(
         config.colour_theme.primary :: any,
         config.name.long
