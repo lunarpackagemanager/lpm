@@ -1,49 +1,37 @@
+local libutil = require("@pkg/libutil")
+local serde = require("@lune/serde")
+local std = require("@pkg/std")
+
 local config = require("../config")
+local t = require("../types")
+
 local manifest_helper = require("./manifest_helper")
 local output = require("./output")
 local resolver = require("./resolver")
-local serde = require("@lune/serde")
-local std = require("@pkg/std")
-local t = require("../types")
 local tree = require("./tree")
 
 local fs = std.fs
 local net = std.net
 local process = std.process
 
+local Table = libutil.table
+
 local package_handler = {}
 
-type InstallPackageOptions = {
-  add_dependency: boolean | string?,
-  warn_on_already_installed: boolean?,
-  dont_reinstall: boolean?,
-}
-
-type Dependency = t.Dependency
+type InstallPackageOptions = t.InstallPackageOptions
+type Dependencies = t.Dependencies
 
 function package_handler.is_package_installed(name: string): boolean
   return fs.isDir(`lune_modules/{name:split("/")[1]}`) and fs.isDir(`lune_modules/{name}`)
 end
 
-local function tableSize<K, V>(tbl: { [K]: V }?)
-  if tbl then
-    local count = 0
-    for _ in tbl do
-      count += 1
-    end
-    return count
-  end
-
-  return 0
-end
-
 function package_handler.get_dependency_info(
   path: string,
-  dependencies: { [string]: Dependency },
+  dependencies: Dependencies,
   maxDepth: number,
   currentDepth: number
 )
-  local read_ok, manifest = manifest_helper.read(false, path)
+  local read_ok, manifest = manifest_helper.read(false, path .. "/package.toml")
   assert(read_ok and manifest, "Package manifest not found")
 
   if dependencies[manifest.name] == nil then
@@ -53,13 +41,13 @@ function package_handler.get_dependency_info(
   end
 
   if currentDepth <= maxDepth then
-    if manifest.dependencies and tableSize(manifest.dependencies) > 0 then
+    if manifest.dependencies and Table.size(manifest.dependencies :: any, true) > 0 then
       dependencies[manifest.name].dependencies = {}
       for dependencyName in manifest.dependencies do
-        local package_manifest_path = `lune_modules/{manifest.name}/{dependencyName}/package.toml`
-        if fs.isFile(package_manifest_path) then
+        local package_path = `{path}/lune_modules/{dependencyName}`
+        if fs.isFile(package_path .. "/package.toml") then
           package_handler.get_dependency_info(
-            package_manifest_path,
+            package_path,
             dependencies[manifest.name].dependencies :: any,
             maxDepth,
             currentDepth + 1
@@ -80,9 +68,9 @@ function package_handler.get_package_info(depth: number)
   }
 
   for dependencyName, _ in manifest.dependencies do
-    local package_manifest_path = `lune_modules/{dependencyName}/package.toml`
-    if fs.isFile(package_manifest_path) then
-      package_handler.get_dependency_info(package_manifest_path, data.dependencies, depth, 1)
+    local package_path = `lune_modules/{dependencyName}`
+    if fs.isFile(package_path .. "/package.toml") then
+      package_handler.get_dependency_info(package_path, data.dependencies, depth, 1)
     end
   end
 
@@ -121,7 +109,7 @@ function package_handler.treeshake()
   end
 
   local read_ok, manifest, commit = manifest_helper.read(true)
-  assert(read_ok and manifest and commit, "Packagee manifest is not found.")
+  assert(read_ok and manifest and commit, "Package manifest not found")
 
   for _, item in fs.readDir("lune_modules") do
     if not manifest.dependencies[item] then
