@@ -1,10 +1,10 @@
 local serde = require("@lune/serde")
+local std = require("@pkg/std")
 
 local output = require("./output")
 
 local t = require("../types")
 
-local std = require("@pkg/std")
 local process = std.process
 local os = std.os
 local path = std.path

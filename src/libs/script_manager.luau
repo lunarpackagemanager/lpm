@@ -1,9 +1,10 @@
 --!nocheck
 
 local libutil = require("@pkg/libutil")
+local std = require("@pkg/std")
+
 local manifest_helper = require("./manifest_helper")
 local output = require("./output")
-local std = require("@pkg/std")
 
 local Table = libutil.table
 
