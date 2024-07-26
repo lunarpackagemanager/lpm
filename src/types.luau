@@ -64,13 +64,21 @@ export type Semver = {
 
 export type Dependency = {
   version: string,
-  dependencies: { [string]: Dependency }?,
+  dependencies: Dependencies?,
 }
 
-export type RootDependency = {
+export type Package = {
   name: string,
   version: string,
-  dependencies: { [string]: Dependency },
+  dependencies: Dependencies,
+}
+
+export type Dependencies = { [string]: Dependency }
+
+export type InstallPackageOptions = {
+  add_dependency: boolean | string?,
+  warn_on_already_installed: boolean?,
+  dont_reinstall: boolean?,
 }
 
 return {}

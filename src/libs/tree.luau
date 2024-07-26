@@ -81,7 +81,7 @@ local function pprint(
   return lines
 end
 
-local function tree(root: t.RootDependency, options: TreeOptions?)
+local function tree(root: t.Package, options: TreeOptions?)
   local fixedOptions: TreeOptions = options or {}
   fixedOptions = Table.reconcile(fixedOptions, DEFAULT_SETTINGS)
   fixedOptions.max_depth = fixedOptions.max_depth :: number + 1
