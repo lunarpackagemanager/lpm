@@ -1,42 +1,46 @@
 --!nocheck
-
+local ansis = require("./ansis")
 local disable_ansi = false
 
 local color = {
   white_underline = function(s: string): string
-    return if disable_ansi then s else `\27[1;4m{s}\27[0m`
+    return if disable_ansi then s else ansis.hex("#cdd6f4")(ansis.underline(s))
   end,
 
   white = function(s: string): string
-    return if disable_ansi then s else `\27[37;1m{s}\27[0m`
+    return if disable_ansi then s else ansis.hex("#cdd6f4")(s)
+  end,
+
+  white_bold = function(s: string): string
+    return if disable_ansi then s else ansis.hex("#cdd6f4")(ansis.bold(s))
   end,
 
   green = function(s: string): string
-    return if disable_ansi then s else `\27[32;1m{s}\27[0m`
+    return if disable_ansi then s else ansis.hex("#a6e3a1")(s)
   end,
 
   red = function(s: string): string
-    return if disable_ansi then s else `\27[31;1m{s}\27[0m`
+    return if disable_ansi then s else ansis.hex("#f38ba8")(s)
   end,
 
   yellow = function(s: string): string
-    return if disable_ansi then s else `\27[33;1m{s}\27[0m`
+    return if disable_ansi then s else ansis.hex("#f9e2af")(s)
   end,
 
   red_highlight = function(s: string): string
-    return if disable_ansi then s else `\27[41;1;30m{s}\27[0m`
+    return if disable_ansi then s else ansis.redBright(s)
   end,
 
   green_highlight = function(s: string): string
-    return if disable_ansi then s else `\27[42;1;30m{s}\27[0m`
+    return if disable_ansi then s else ansis.greenBright(s)
   end,
 
   gray = function(s: string): string
-    return if disable_ansi then s else `\27[38;1m{s}\27[0m`
+    return if disable_ansi then s else ansis.hex("#bac2de")(s)
   end,
 
   orange = function(s: string): string
-    return if disable_ansi then s else `\27[38;5;208m{s}\27[0m`
+    return if disable_ansi then s else ansis.hex("#fab387")(s)
   end,
 }
 
@@ -168,7 +172,7 @@ end
 
 local function TITLE(title: string)
   print()
-  print(color.white(title))
+  print(color.white_bold(title))
 end
 
 return {
