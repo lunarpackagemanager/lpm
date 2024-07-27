@@ -7,7 +7,7 @@ local Command = Commander.Command
 return Command.new("list")
   :description("List packages")
   :aliases({ "ls" })
-  :option("-d, --depth <amount>", "Depth")
+  :option("-d, --depth [amount]", "Depth")
   :option("-a, --all", "List all dependencies")
   :option("-j, --json", "JSON format")
   :action(function(opts)
