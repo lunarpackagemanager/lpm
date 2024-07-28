@@ -49,15 +49,6 @@ type CharPositions = {
   }
 }
 
-local file_cache = {}
-
-local function readFile(path: string)
-  if not file_cache[path] then
-    file_cache[path] = fs.readFile(path)
-  end
-  return file_cache[path]
-end
-
 local function header(text: string): string
   local v_ln = string.rep("-", WIDTH)
 
@@ -183,7 +174,7 @@ function bundler.bundle(entrypoint_path: string, keep_comment: boolean?): string
   local extensions = { "", ".lua", ".luau", "/init.lua", "/init.luau" }
 
   local function process_file(file_path: string)
-    local source = readFile(file_path)
+    local source = fs.readFile(file_path)
 
     local source_dir = path.dirname(file_path) .. "/"
     local original_src_hash = serde.hash("sha256", source)
