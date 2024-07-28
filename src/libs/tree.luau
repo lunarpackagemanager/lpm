@@ -1,7 +1,9 @@
-local libutil = require("@pkg/libutil")
+local polyfill = require("@pkg/polyfill")
+
 local t = require("../types")
 
-local Table = libutil.table
+local Array = polyfill.Array
+local Table = polyfill.Table
 
 local SYMBOLS_ANSI = {
   LAST_BRANCH = "└── ",
@@ -73,7 +75,7 @@ local function pprint(
           options,
           isCurrentLast
         )
-        Table.push(lines, Table.spread(linesForFile))
+        Array.push(lines, Array.spread(linesForFile))
       end
     end
   end
@@ -83,7 +85,7 @@ end
 
 local function tree(root: t.Package, options: TreeOptions?)
   local fixedOptions: TreeOptions = options or {}
-  fixedOptions = Table.reconcile(fixedOptions, DEFAULT_SETTINGS)
+  fixedOptions = Table.sync(fixedOptions, DEFAULT_SETTINGS)
   fixedOptions.max_depth = fixedOptions.max_depth :: number + 1
 
   local lines = { `{root.name}@{root.version}` }
@@ -101,7 +103,7 @@ local function tree(root: t.Package, options: TreeOptions?)
 
     local linesForFile = pprint(dependencyName, subData, 1, "", fixedOptions, isCurrentLast)
 
-    Table.push(lines, Table.spread(linesForFile))
+    Array.push(lines, Array.spread(linesForFile))
   end
 
   return table.concat(lines, "\n")
