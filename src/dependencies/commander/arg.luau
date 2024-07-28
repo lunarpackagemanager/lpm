@@ -1,8 +1,8 @@
 local types = require("./types")
 
-local libutil = require("@pkg/libutil")
+local polyfill = require("@pkg/polyfill")
 
-local String = libutil.string
+local String = polyfill.String
 
 type Arg = types.Arg
 

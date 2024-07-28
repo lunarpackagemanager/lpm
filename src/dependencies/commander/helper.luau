@@ -1,10 +1,10 @@
 local types = require("./types")
 local util = require("./builtin/util")
 
-local libutil = require("@pkg/libutil")
+local polyfill = require("@pkg/polyfill")
 
-local Table = libutil.table
-local String = libutil.string
+local Array = polyfill.Array
+local String = polyfill.String
 
 type Arg = types.Arg
 type Opt = types.Opt
@@ -50,19 +50,19 @@ function Helper.argumentDescription(arg: Arg): string
 end
 
 function Helper.longestArgumentTermLength(cmd: Command): number
-  return Table.reduce(Helper.visibleArguments(cmd), function(max, arg)
+  return Array.reduce(Helper.visibleArguments(cmd), function(max, arg)
     return math.max(max, #Helper.argumentTerm(arg))
   end, 0)
 end
 
 function Helper.longestSubcommandTermLength(cmd: Command): number
-  return Table.reduce(Helper.visibleCommands(cmd), function(max, cmd)
+  return Array.reduce(Helper.visibleCommands(cmd), function(max, cmd)
     return math.max(max, #Helper.subCommandTerm(cmd))
   end, 0)
 end
 
 function Helper.longestOptionTermLength(cmd: Command): number
-  return Table.reduce(Helper.visibleOptions(cmd), function(max, opt)
+  return Array.reduce(Helper.visibleOptions(cmd), function(max, opt)
     return math.max(max, #Helper.optionTerm(opt))
   end, 0)
 end
@@ -77,7 +77,7 @@ end
 
 function Helper.subCommandTerm(cmd: Command)
   local args = table.concat(
-    Table.map(cmd.registeredArguments, function(arg)
+    Array.map(cmd.registeredArguments, function(arg)
       return util.humanReadableArgName(arg)
     end),
     " "
@@ -91,7 +91,7 @@ end
 
 function Helper.subCommandTerm(cmd: Command): string
   local args = table.concat(
-    Table.map(cmd.registeredArguments, function(arg)
+    Array.map(cmd.registeredArguments, function(arg)
       return util.humanReadableArgName(arg)
     end),
     " "
@@ -142,11 +142,12 @@ function Helper.commandTerm(commander: any, cmd: any): string?
   return (usage .. (commander._name and commander._name .. " " or "") .. Helper.subCommandTerm(cmd))
 end
 
+function Helper.commandAlias(cmd: Command): { string }
+  return cmd._aliases
+end
+
 function Helper.commandUsage(cmd: Command): string?
   local cmdName = cmd._name
-  if cmd._aliases[1] then
-    cmdName ..= "|" .. cmd._aliases[1]
-  end
   local ancestorCmdNames = ""
   local ancestorCmd = cmd.parent
   while ancestorCmd do
@@ -158,7 +159,7 @@ function Helper.commandUsage(cmd: Command): string?
 end
 
 function Helper.visibleOptions(cmd: Command): { Opt }
-  local visibleOptions = Table.filter(cmd.options, function(opt: Opt)
+  local visibleOptions = Array.filter(cmd.options, function(opt: Opt)
     return not opt.hidden
   end)
 
@@ -166,7 +167,7 @@ function Helper.visibleOptions(cmd: Command): { Opt }
 end
 
 function Helper.visibleArguments(cmd: Command)
-  if Table.find(cmd.registeredArguments, function(argument)
+  if Array.find(cmd.registeredArguments, function(argument)
     return argument.description ~= nil
   end) then
     return cmd.registeredArguments
@@ -176,7 +177,7 @@ function Helper.visibleArguments(cmd: Command)
 end
 
 function Helper.visibleCommands(cmd: Command)
-  local visibleCommands = Table.filter(cmd.commands, function(cmd)
+  local visibleCommands = Array.filter(cmd.commands, function(cmd)
     return not cmd._hidden
   end)
 
@@ -215,41 +216,46 @@ function Helper.formatHelp(cmd: Command)
 
   if not cmd.parent then
     output = { cmd._name, "" }
-    output = Table.concat(output, { `Usage: {Helper.commandUsage(cmd)}`, "" })
+    output = Array.concat(output, { `Usage: {Helper.commandUsage(cmd)}`, "" })
   else
     output = { `Usage: {Helper.commandUsage(cmd)}`, "" }
   end
 
   local commandDescription = Helper.commandDescription(cmd)
   if #commandDescription > 0 then
-    output = Table.concat(output, {
+    output = Array.concat(output, {
       Helper.commandDescription(cmd),
       "",
     })
   end
 
-  local argumentList = Table.map(Helper.visibleArguments(cmd), function(arg)
+  local argumentList = Array.map(Helper.visibleArguments(cmd), function(arg)
     return formatItem(Helper.argumentTerm(arg), Helper.argumentDescription(arg))
   end)
 
   if #argumentList > 0 then
-    output = Table.concat(output, { `Arguments:`, formatList(argumentList), "" })
+    output = Array.concat(output, { `Arguments:`, formatList(argumentList), "" })
   end
 
-  local optionList = Table.map(Helper.visibleOptions(cmd), function(opt)
+  local optionList = Array.map(Helper.visibleOptions(cmd), function(opt)
     return formatItem(Helper.optionTerm(opt), Helper.optionDescription(opt))
   end)
 
   if #optionList > 0 then
-    output = Table.concat(output, { "Options:", formatList(optionList), "" })
+    output = Array.concat(output, { "Options:", formatList(optionList), "" })
   end
 
-  local commandList = Table.map(Helper.visibleCommands(cmd), function(cmd)
+  local commandList = Array.map(Helper.visibleCommands(cmd), function(cmd)
     return formatItem(Helper.subCommandTerm(cmd), Helper.subCommandDescription(cmd))
   end)
 
   if #commandList > 0 then
-    output = Table.concat(output, { "Commands:", formatList(commandList), "" })
+    output = Array.concat(output, { "Commands:", formatList(commandList), "" })
+  end
+
+  local aliases = Helper.commandAlias(cmd)
+  if #aliases > 0 then
+    output = Array.concat(output, { `Aliases:`, table.concat(aliases, ", ") })
   end
 
   local result = table.concat(output, "\n")

@@ -1,9 +1,9 @@
 local types = require("./types")
 
-local libutil = require("@pkg/libutil")
+local polyfill = require("@pkg/polyfill")
 
-local Table = libutil.table
-local String = libutil.string
+local Array = polyfill.Array
+local String = polyfill.String
 
 local Opt = {}
 Opt.interface = {}
@@ -51,7 +51,7 @@ end
 local function camelcase(str: string)
   local splittedString = string.split(str, "-")
 
-  return Table.reduce(splittedString, function(str: string, word)
+  return Array.reduce(splittedString, function(str: string, word)
     local wordSplit = string.split(word, "")
     return str .. wordSplit[1]:upper() .. String.slice(word, 2)
   end)
@@ -66,7 +66,7 @@ function Opt.interface.new(flags: string, description: string?): Opt
     long = optionFlags.longFlag and "--" .. optionFlags.longFlag or nil,
     short = optionFlags.shortFlag and "-" .. optionFlags.shortFlag or nil,
     required = String.includes(flags, "<"),
-    optional = String.includes(flags, "%["),
+    optional = String.includes(flags, "["),
     mandatory = false,
     defaultValue = nil,
     defaultValueDescription = nil,
@@ -78,7 +78,7 @@ function Opt.interface.new(flags: string, description: string?): Opt
     setmetatable(option, {
       __index = Opt.prototype,
       __tostring = function(_)
-        return String.format("Opt<>")
+        return "Opt"
       end,
     })
   )

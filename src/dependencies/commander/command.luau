@@ -3,13 +3,14 @@ local Helper = require("./helper")
 local Opt = require("./opt")
 local types = require("./types")
 
-local Error = require("./builtin/error")
 local libutil = require("@pkg/libutil")
+local polyfill = require("@pkg/polyfill")
 local std = require("@pkg/std")
 local util = require("./builtin/util")
 
-local Table = libutil.table
-local String = libutil.string
+local Array = polyfill.Array
+local String = polyfill.String
+local Error = polyfill.Error
 local class = libutil.class
 local eventEmitter = libutil.eventEmitter
 
@@ -155,7 +156,7 @@ function Command.prototype.arguments(self: Command, names: string): Command
 end
 
 function Command.prototype.addArgument(self: Command, argument: Arg): Command
-  local previousArgument = Table.slice(self.registeredArguments, -1)[1]
+  local previousArgument = Array.slice(self.registeredArguments, -1)[1]
   if previousArgument and previousArgument.variadic then
     Error.new(`only the last argument can be variadic: '{previousArgument:name()}'`):throw()
   end
@@ -203,11 +204,11 @@ function Command.prototype.action(self: Command, fn: (...any) -> ()): Command
   assert(fn, "fn <function> is required for " .. self._name .. " command")
   local function listener(args)
     local expectedArgsCount = #self.registeredArguments
-    local actionArgs = Table.slice(args, 1, expectedArgsCount + 1)
+    local actionArgs = Array.slice(args, 1, expectedArgsCount + 1)
     actionArgs[expectedArgsCount + 1] = self:opts()
-    Table.push(actionArgs, self)
+    Array.push(actionArgs, self)
 
-    fn(Table.spread(actionArgs))
+    fn(Array.spread(actionArgs))
   end
   self._actionHandler = listener
 
@@ -242,7 +243,7 @@ function Command.prototype._registerOption(self: Command, option: Opt): ()
       `Cannot add option '{option.flags}'{self._name and ` to command '{self._name}'`} due to conflicting flag '{matchingFlag}' - already used by option '{matchingOption.flags}'`
     ):throw()
   end
-  Table.push(self.options, option)
+  Array.push(self.options, option)
   table.sort(self.options, function(a, b)
     return a:name() < b:name()
   end)
@@ -250,10 +251,10 @@ end
 
 function Command.prototype._registerCommand(self: Command, command: Command): ()
   local knownBy = function(cmd: Command)
-    return Table.concat(cmd._name, cmd._aliases)
+    return Array.concat(cmd._name, cmd._aliases)
   end
 
-  local alreadyUsed = Table.find(knownBy(command), function(name)
+  local alreadyUsed = Array.find(knownBy(command), function(name)
     return self:_findCommand(name) ~= nil
   end)
 
@@ -263,7 +264,7 @@ function Command.prototype._registerCommand(self: Command, command: Command): ()
     Error.new(`cannot add command '{newCmd}' as already have command '{existingCmd}'`):throw()
   end
 
-  Table.push(self.commands, command)
+  Array.push(self.commands, command)
   table.sort(self.commands, function(a, b)
     return a._name < b._name
   end)
@@ -334,7 +335,7 @@ function Command.prototype._prepareUserArgs(self: Command, argv: { string }?): {
     argv = table.clone(process.args)
   end
 
-  local userArgs = Table.slice(argv :: { string }, 1)
+  local userArgs = Array.slice(argv :: { string }, 1)
 
   self._name = self._name or "program"
 
@@ -408,9 +409,9 @@ function Command.prototype._processArguments(self: Command): ()
     local value = declaredArg.defaultValue :: any
     if declaredArg.variadic then
       if index <= #self.args then
-        value = Table.slice(self.args, index) :: any
+        value = Array.slice(self.args, index) :: any
         if declaredArg.parseArg then
-          value = Table.reduce(value :: any, function(processed, v)
+          value = Array.reduce(value :: any, function(processed, v)
             return myParseArg(declaredArg, v, processed)
           end)
         end
@@ -435,12 +436,12 @@ end
 
 function Command.prototype._parseCommand(self: Command, operands: any, unknown: any): ()
   local parsed = self:parseOptions(unknown)
-  operands = Table.concat(operands, parsed.operands)
+  operands = Array.concat(operands, parsed.operands)
   unknown = parsed.unknown
-  self.args = Table.concat(operands, unknown)
+  self.args = Array.concat(operands, unknown)
 
   if operands and self:_findCommand(operands[1]) then
-    return self:_dispatchSubcommand(operands[1], Table.slice(operands, 2), unknown)
+    return self:_dispatchSubcommand(operands[1], Array.slice(operands, 2), unknown)
   end
 
   if self:_getHelpCommand() then
@@ -493,13 +494,13 @@ function Command.prototype._findCommand(self: Command, name: string): Command?
     return
   end
 
-  return Table.find(self.commands, function(cmd)
+  return Array.find(self.commands, function(cmd)
     return cmd._name == name or table.find(cmd._aliases, name) ~= nil
   end)
 end
 
 function Command.prototype._findOption(self: Command, arg: string): Opt?
-  return Table.find(self.options, function(option)
+  return Array.find(self.options, function(option)
     return option:is(arg)
   end)
 end
@@ -519,7 +520,7 @@ function Command.prototype.parseOptions(self: Command, argv: { string }): { oper
   local operands = {}
   local unknown = {}
   local dest = operands
-  local args = Table.slice(argv, 1)
+  local args = Array.slice(argv, 1)
 
   local function maybeOption(arg: string)
     return #arg > 1 and string.sub(arg, 1, 1) == "-"
@@ -531,7 +532,7 @@ function Command.prototype.parseOptions(self: Command, argv: { string }): { oper
       if dest == unknown then
         table.insert(dest, arg)
       end
-      Table.push(dest, Table.spread(args))
+      Array.push(dest, Array.spread(args))
       break
     end
 
@@ -565,7 +566,7 @@ function Command.prototype.parseOptions(self: Command, argv: { string }): { oper
         else
           self:emit(`option:{option:name()}`)
           table.insert(args, 1, "-" .. arg:sub(3))
-          -- Table.unshift(args, `-{String.slice(arg, 3)}`)
+          -- Array.unshift(args, `-{String.slice(arg, 3)}`)
         end
         continue
       end
@@ -694,7 +695,7 @@ function Command.prototype.alias(self: Command, alias: string): Command
   if self.parent then
     local matchingCommand = self.parent:_findCommand(alias)
     if matchingCommand then
-      local existingCommand = table.concat(Table.concat({ matchingCommand._name }, matchingCommand._aliases), "|")
+      local existingCommand = table.concat(Array.concat({ matchingCommand._name }, matchingCommand._aliases), "|")
       Error.new(`cannot add alias '{alias}' to command '{self._name}' as already have command '{existingCommand}'`)
         :throw()
     end
@@ -713,11 +714,11 @@ function Command.prototype.aliases(self: Command, aliases: { string }): Command
 end
 
 function Command.prototype.usage(self: Command): string
-  local args = Table.map(self.registeredArguments, function(arg)
+  local args = Array.map(self.registeredArguments, function(arg)
     return util.humanReadableArgName(arg)
   end)
 
-  local fixedTable = Table.concat(
+  local fixedTable = Array.concat(
     {},
     #self.commands > 0 and "[command]" or {},
     #self.registeredArguments > 0 and args or {},
@@ -750,7 +751,7 @@ end
 function Command.prototype._outputHelpIfRequested(self: Command, args: { string }): ()
   local helpOption = self:_getHelpOption()
   local helpRequested = helpOption ~= nil
-      and Table.find(args, function(arg)
+      and Array.find(args, function(arg)
         return helpOption:is(arg)
       end) ~= nil
     or false
