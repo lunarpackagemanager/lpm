@@ -1,4 +1,4 @@
-local libutil = require("@pkg/libutil")
+local polyfill = require("@pkg/polyfill")
 local serde = require("@lune/serde")
 local std = require("@pkg/std")
 
@@ -14,7 +14,7 @@ local fs = std.fs
 local net = std.net
 local process = std.process
 
-local Table = libutil.table
+local Table = polyfill.Table
 
 local package_handler = {}
 
@@ -41,7 +41,7 @@ function package_handler.get_dependency_info(
   end
 
   if currentDepth <= maxDepth then
-    if manifest.dependencies and Table.size(manifest.dependencies :: any, true) > 0 then
+    if manifest.dependencies and Table.size(manifest.dependencies :: any) > 0 then
       dependencies[manifest.name].dependencies = {}
       for dependencyName in manifest.dependencies do
         local package_path = `{path}/lune_modules/{dependencyName}`
