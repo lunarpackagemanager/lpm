@@ -1,19 +1,5 @@
 local types = require("../types")
 
-local function assertEq(l: any, r: any, msg: string?)
-  assert(l == r, msg or `[__CLAP] expected {l} == {r}`)
-end
-
-local function assertHandler(tbl: any)
-  -- FIXME: Need to type sub as Opt | Command, without circular requires
-  -- or separating types into its own module
-  for _, sub in tbl do
-    if not sub.isParent then
-      assertEq(typeof(sub.handler), "function", `[__CLAP] field \`handler\` is mandatory for \`{sub.name}\``)
-    end
-  end
-end
-
 local function humanReadableArgName(arg: types.Arg): string
   local nameOutput = arg:name() .. (arg.variadic == true and "..." or "")
   return arg.required and "<" .. nameOutput .. ">" or "[" .. nameOutput .. "]"
@@ -115,8 +101,6 @@ local function suggestSimilar(word: string, candidates: { string }): string
 end
 
 return table.freeze({
-  assertEq = assertEq,
-  assertHandler = assertHandler,
   humanReadableArgName = humanReadableArgName,
   compareTwoStrings = compareTwoStrings,
   findBestMatch = findBestMatch,
