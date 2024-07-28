@@ -25,7 +25,7 @@ local targets = {
   "macos-x86_64",
 }
 
-export type BuildTarget = "all" | "linux-x86_64" | "linux-aarch64" | "windows-x86_64"
+export type BuildTarget = "all" | "linux-x86_64" | "linux-aarch64" | "windows-x86_64" | "macos-x86_64" | "macos-aarch64"
 export type BuildMode = "dev" | "release"
 
 export type BuildOverride = {
@@ -125,19 +125,20 @@ function build.build(mode: BuildMode, override: BuildOverride)
   b_config.lune_version = b_config.lune_version or config.lune_version
   b_config.name = b_config.name or manifest.name
 
+  local out_name = b_config.name
+  local target = b_config.target
+
   output.write("Bundling files...")
   local bundleRes = bundler.bundle((manifest.main :: any).bin or manifest.main, override.comment)
+  fs.writeFile(`./dist/{out_name}.luau`, bundleRes)
 
-  output.write("Comping files...")
+  output.write("Compiling files...")
   local bytecode = luau.compile(bundleRes, {
     optimizationLevel = b_config.optimization_level,
     debugLevel = b_config.debug_level,
     coverageLevel = b_config.coverage_level,
   })
-  local out_name = b_config.name
-  local target = b_config.target
 
-  fs.writeFile(`./dist/{out_name}.luau`, bundleRes)
   fs.writeFile(`./release/{out_name}.luauc`, bytecode)
 
   local function create_release(os: string, arch: string)
@@ -179,10 +180,6 @@ function build.build(mode: BuildMode, override: BuildOverride)
     local targetData = string.split(target :: string, "-")
     create_release(targetData[1], targetData[2])
   end
-
-  output.write(`Exporting bytecode`)
-  fs.writeFile(`./release/{out_name}.luauc`, bytecode)
-  output.write(`Exported bytecode`)
 
   if b_config.zip then
     compress(`./release/{out_name}.luauc`, `./release/{out_name}-bytecode`)
