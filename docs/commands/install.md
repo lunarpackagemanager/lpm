@@ -1,4 +1,4 @@
-# install
+# npm-install
 
 ### Install a package
 
