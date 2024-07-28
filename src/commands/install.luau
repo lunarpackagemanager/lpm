@@ -6,9 +6,9 @@ local Command = Commander.Command
 
 local command = Command.new("install")
   :description("Install a package")
-  :aliases({ "add" })
+  :aliases({ "add", "i" })
   :argument("[package-spec...]", "Package specification")
-  :option("-D, --dev", "Install to devDependencies")
+  :option("-D, --save-dev", "Package will apear in your devDependencies")
   :action(function(packages, opts)
     if #packages > 0 then
       for _, package in packages do
