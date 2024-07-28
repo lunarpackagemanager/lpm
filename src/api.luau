@@ -16,7 +16,8 @@ api.commands = {
   ["init"] = require("./commands/init"),
   ["build"] = require("./commands/build"),
   ["run"] = require("./commands/run"),
-  ["list"] = require("./commands/list"),
+  ["ls"] = require("./commands/ls"),
+  ["help"] = require("./commands/help"),
 }
 
 return api
