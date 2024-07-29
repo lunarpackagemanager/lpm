@@ -1,6 +1,7 @@
-# npm-ls
-
-### List installed packages
+---
+title: lpm-ls
+description: List installed packages
+---
 
 ### Synopsis
 ```sh

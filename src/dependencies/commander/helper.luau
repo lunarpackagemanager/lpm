@@ -146,6 +146,23 @@ function Helper.commandAlias(cmd: Command): { string }
   return cmd._aliases
 end
 
+function Helper.getAllCommands(cmd: Command)
+  local data = {}
+
+  for _, command in cmd.commands do
+    if data[command._name] == nil then
+      data[command._name] = {}
+      if #command._aliases > 0 then
+        for _, alias in command._aliases do
+          table.insert(data[command._name], alias)
+        end
+      end
+    end
+  end
+
+  return data
+end
+
 function Helper.commandUsage(cmd: Command): string?
   local cmdName = cmd._name
   local ancestorCmdNames = ""

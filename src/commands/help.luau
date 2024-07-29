@@ -5,11 +5,13 @@ local fs = std.fs
 local process = std.process
 
 local Command = Commander.Command
+local Helper = require("../dependencies/commander/helper")
 
-local command = Command.new("help")
+return Command.new("help")
   :description("Help command")
   :argument("<command>", "Command name")
-  :action(function(command)
+  :action(function(command, _, cmd)
+    local commands = Helper.getAllCommands(cmd.parent)
     if fs.isFile(`./docs/commands/{command}.md`) then
       process.spawn(
         "glow",
@@ -18,5 +20,3 @@ local command = Command.new("help")
       )
     end
   end)
-
-return command

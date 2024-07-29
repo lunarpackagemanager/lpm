@@ -1,9 +1,10 @@
-# npm-install
-
-### Install a package
+---
+title: lpm-install
+description: Install a package
+---
 
 ### Synopsis
-```sh
+```bash
 lpm install [package-spec...]
 
 aliases: add, i
@@ -13,4 +14,5 @@ aliases: add, i
 This command installs a package and any packages that it depends on.
 
 ### Flags
-- `-D, --save-dev`: Package will appear in your `devDependencies`.
+
+* `-D, --save-dev`: Package will appear in your `devDependencies`.
