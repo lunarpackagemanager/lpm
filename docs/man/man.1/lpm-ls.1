@@ -1,0 +1,41 @@
+.TH "LPM-LS" "1" "July 2024" "LPM@0.1.0" ""
+.SH "NAME"
+\fBlpm-ls\fR - List installed packages
+.SS "Synopsis"
+.P
+.RS 2
+.nf
+lpm ls
+
+alias: list
+.fi
+.RE
+.SS "Description"
+.P
+This command will print to stdout all the versions of packages that are installed, as well as their dependencies when \fB--all\fR is specified, in a tree structure.
+.SS "Configuration"
+.SS "\fBdepth\fR"
+.RS 0
+.IP \(bu 4
+Default: \fBmath.huge\fR if \fB--all\fR is set, otherwise \fB1\fR
+.IP \(bu 4
+Type: nil or number
+.RE 0
+
+.P
+The depth to go when recursing packages for \fBlpm ls\fR.
+.P
+If not set, \fBlpm ls\fR will show only the immediate dependencies of the root project. If \fB--all\fR is set, then npm will show all dependencies by default.
+.SS "\fBjson\fR"
+.RS 0
+.IP \(bu 4
+Default: false
+.IP \(bu 4
+Type: boolean
+.RE 0
+
+.P
+Whether or not to output JSON data, rather than the normal output.
+.P
+Not supported by all npm commands.
+
