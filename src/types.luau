@@ -42,6 +42,8 @@ export type PackageManifest = {
   description: string?,
   keywords: { string }?,
 
+  repository: string,
+
   dev_dependencies: { [string]: string },
   contributors: { string }?,
   private: boolean?,
