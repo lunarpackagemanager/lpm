@@ -1,5 +1,6 @@
 local serde = require("@lune/serde")
 local std = require("@pkg/std")
+local stdio = require("@lune/stdio")
 
 local output = require("./output")
 
@@ -32,20 +33,26 @@ local MANIFEST_DEFAULTS = {
 
 local manifest_helper = {}
 
-function manifest_helper.new(questionnaire: { [string]: any }): t.PackageManifest
-  return {
-    name = questionnaire.name or path.basename(process.cwd()),
-    version = questionnaire.version or "0.1.0",
-    main = questionnaire.main or "./src/init.luau",
+local function getName()
+  return path.basename(process.cwd())
+end
 
-    owner = questionnaire.owner or os.userInfo().username,
-    files = { "*" },
-    dependencies = {},
-    dev_dependencies = {},
-    description = questionnaire.description or "",
-    keywords = questionnaire.keywords or {},
-    repository = questionnaire.repository or "",
-  }
+function manifest_helper.new(yes: boolean?): t.PackageManifest
+  local exports: t.PackageManifest = {} :: t.PackageManifest
+
+  local name = getName()
+  exports.name = yes and name or stdio.prompt("text", "Package Name", name)
+  exports.version = yes and "0.1.0" or stdio.prompt("text", "Package Version", "0.1.0")
+  exports.main = "./src/init.luau"
+  exports.owner = yes and "" or os.userInfo().username
+  exports.files = { "*" }
+  exports.dependencies = {}
+  exports.dev_dependencies = {}
+  exports.keywords = yes and {} or stdio.prompt("text", "Package Keywords (seperated by ';')"):split(";")
+  exports.description = yes and "" or stdio.prompt("text", "Package Description", "")
+  exports.repository = yes and "" or stdio.prompt("text", "Package Repository", "")
+
+  return exports
 end
 
 function manifest_helper.read(modifiable: boolean?, path: string?): (boolean, t.PackageManifest?, () -> ()?)
