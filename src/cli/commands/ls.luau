@@ -9,11 +9,11 @@ local Command = Commander.Command
 return Command.new("ls")
   :description("List installed packages")
   :aliases({ "list" })
-  :option("-d, --depth [amount]", "The depth to go when recursing packages", 1)
+  :option("-d, --depth [amount]", "The depth to go when recursing packages")
   :option("-a, --all", "List all dependencies")
   :option("-j, --json", "Output in JSON format")
   :action(function(opts)
-    local depth: number = if opts.all then math.huge else tonumber(opts.depth) :: number
+    local depth: number = if opts.all then math.huge elseif opts.depth then tonumber(opts.depth) :: number else 1
 
     local package = getPackageInfo(depth)
 
