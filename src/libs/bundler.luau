@@ -167,6 +167,19 @@ local function delete_comments(str: string, positions: CharPositions)
   return table.concat(lines)
 end
 
+local function replaceGlobal(str: string, globalName: string, replacement: any)
+  local pattern = "(_G%." .. globalName .. " = )([^%s]+)"
+  local fullReplacement = typeof(replacement) == "string" and string.format("%q", replacement) or tostring(replacement)
+  return str:gsub(pattern, "%1" .. tostring(fullReplacement))
+end
+
+local function replaceGlobals(str: string, opts: { [string]: any })
+  for opt, replacement in pairs(opts) do
+    str = replaceGlobal(str, opt, replacement) -- Update the string with the replacement
+  end
+  return str
+end
+
 function bundler.bundle(entrypoint_path: string, keep_comment: boolean?): string
   local luaurc = sys.luaurc() :: any
   local aliases = luaurc.aliases or {}
@@ -270,6 +283,8 @@ function bundler.bundle(entrypoint_path: string, keep_comment: boolean?): string
 
     local parsed = luau.parse(source)
     recurse(parsed.ast)
+
+    obj.src = replaceGlobals(obj.src, { DEBUG = false })
 
     if not keep_comment then
       local originalParsed = luau.parse(obj.src)
