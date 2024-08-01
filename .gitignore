@@ -5,6 +5,8 @@
 /lune_modules
 /scripts
 
+test.luau
+
 lpm
 
 tests/
