@@ -18,6 +18,7 @@ api.commands = {
   ["ls"] = require("./cli/commands/ls"),
   ["help"] = require("./cli/commands/help"),
   ["self-update"] = require("./cli/commands/self_update"),
+  ["publish"] = require("./cli/commands/publish"),
 }
 
 return api
