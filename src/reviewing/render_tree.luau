@@ -88,7 +88,7 @@ return function(root: t.Package, options: TreeOptions?)
   fixedOptions = Table.sync(fixedOptions, DEFAULT_SETTINGS)
   fixedOptions.max_depth = fixedOptions.max_depth :: number + 1
 
-  local lines = { `{root.name}@{root.version}` }
+  local lines = { `{root.name}@{root.version} {root.path}` }
   local keys = {}
 
   for key in root.dependencies do
