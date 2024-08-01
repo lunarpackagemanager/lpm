@@ -73,6 +73,7 @@ export type Package = {
   name: string,
   version: string,
   dependencies: Dependencies,
+  path: string,
 }
 
 export type Dependencies = { [string]: Dependency }
