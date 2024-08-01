@@ -1,8 +1,9 @@
 _G.LPM_OUTPUT_MODE = "CLI"
 _G.VERSION = "0.1.0"
+_G.DEBUG = true
 local api = require("./api")
 local process = require("@pkg/std").process
-local program = require("./dependencies/commander").program
+local program = require("./cli/commander").program
 
 local function main()
   program:name("lpm"):version("0.1.0"):description("Luau Package Manager")
