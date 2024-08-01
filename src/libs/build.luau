@@ -1,11 +1,12 @@
 local std = require("@pkg/std")
-local zip = require("@pkg/zzlib")
 
 local config = require("../config")
+local constants = require("../constants")
 
 local bundler = require("./bundler")
-local manifest_helper = require("./manifest_helper")
 local output = require("./output")
+local readManifest = require("../pkg_manifest/read_package_manifest")
+local zip = require("./zzlib")
 
 local fs = std.fs
 local process = std.process
@@ -13,16 +14,16 @@ local os = std.os
 local luau = std.luau
 local net = std.net
 
-local GLOBAL_DIR = `{os.homedir()}/.{config.name.long:lower()}`
+local userOs = process.os
+local userArch = process.arch
+
+local GLOBAL_DIR = constants.global_dir
 
 local build = {}
 
 local targets = {
-  "windows-x86_64",
   "linux-aarch64",
-  "macos-aarch64",
   "linux-x86_64",
-  "macos-x86_64",
 }
 
 export type BuildTarget = "all" | "linux-x86_64" | "linux-aarch64" | "windows-x86_64" | "macos-x86_64" | "macos-aarch64"
@@ -38,6 +39,8 @@ export type BuildOverride = {
   comment: boolean?,
 }
 
+local runtime = `{GLOBAL_DIR}/bin/lune`
+
 local MAGIC = "cr3sc3nt"
 
 function build.patch_binary(runtime: string, bytecode: string): string
@@ -52,34 +55,36 @@ local function run(cmd: string)
   process.spawn(command, arguments, { stdio = "forward" })
 end
 
-function build.get_remote_runtime(os: string, arch: string, version: string?): string
-  local cache_name = `{GLOBAL_DIR}/bin/lune-{os}-{arch}`
+function build.build_binary(loc: string, output: string, os: string, arch: string)
+  return run(`{runtime} build {loc} -o {output} -t {os}-{arch}`)
+end
 
-  if fs.isFile(cache_name) then
-    return fs.readFile(cache_name)
+function build.get_remote_runtime(version: string?)
+  if not fs.isFile(runtime) then
+    local url = string.format(
+      "https://github.com/lune-org/lune/releases/download/v%s/lune-%s-%s-%s.zip",
+      version or config.lune_version,
+      version or config.lune_version,
+      userOs,
+      userArch
+    )
+
+    local container = net.request(url)
+
+    local runtimeData = zip.unzip(container.body, `lune{if userOs == "windows" then ".exe" else ""}`)
+    fs.writeFile(runtime, runtimeData)
+
+    if userOs ~= "windows" then
+      run(`chmod 755 {runtime}`)
+    end
   end
-
-  local url = string.format(
-    "https://github.com/lune-org/lune/releases/download/v%s/lune-%s-%s-%s.zip",
-    version or config.lune_version,
-    version or config.lune_version,
-    os,
-    arch
-  )
-
-  local container = net.request(url)
-
-  local runtime = zip.unzip(container.body, `lune{if os == "windows" then ".exe" else ""}`)
-  fs.writeFile(cache_name, runtime)
-
-  return runtime
 end
 
 local function compress(a: string, b: string)
   if process.os == "windows" then
     run(`powershell Compress-Archive {a} {b} -Force`)
   else
-    run(`zip {b} {a}`)
+    run(`7z a {b}.zip {a}`)
   end
 end
 
@@ -91,6 +96,7 @@ local function cleanFolders(path: string)
 end
 
 function build.build(mode: BuildMode, override: BuildOverride)
+  build.get_remote_runtime()
   cleanFolders("./release")
   cleanFolders("./dist")
 
@@ -102,7 +108,7 @@ function build.build(mode: BuildMode, override: BuildOverride)
 
   local DEBUG = mode == "dev"
 
-  local ok, manifest = manifest_helper.read(false)
+  local ok, manifest = readManifest(false)
   assert(ok and manifest, "No manifest")
 
   local b_config = {}
@@ -129,7 +135,7 @@ function build.build(mode: BuildMode, override: BuildOverride)
   local target = b_config.target
 
   output.write("Bundling files...")
-  local bundleRes = bundler.bundle((manifest.main :: any).bin or manifest.main, override.comment)
+  local bundleRes = bundler.bundle((manifest.main :: any).bin or manifest.main, true)
   fs.writeFile(`./dist/{out_name}.luau`, bundleRes)
 
   output.write("Compiling files...")
@@ -145,12 +151,13 @@ function build.build(mode: BuildMode, override: BuildOverride)
     local ext = if os == "windows" then ".exe" else ""
     local name = `./release/{out_name}-{os}-{arch}{ext}`
 
-    output.write(`Getting remote runtime for {os}-{arch}.`)
-    local runtime = build.get_remote_runtime(os, arch, b_config.lune_version)
+    -- output.write(`Getting remote runtime for {os}-{arch}.`)
+    -- local runtime = build.get_remote_runtime(os, arch, b_config.lune_version)
 
     output.write(`Creating binary for {os}-{arch}`)
+    build.build_binary(`./dist/{out_name}.luau`, name, os, arch)
 
-    fs.writeFile(name, build.patch_binary(runtime, bytecode))
+    -- fs.writeFile(name .. "other", build.patch_binary(runtime, bytecode))
 
     if b_config.zip then
       output.write(`Creating .zip for {os}-{arch}`)
