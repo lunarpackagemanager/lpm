@@ -19,11 +19,10 @@ return function(): { ahead: number, behind: number }?
 
     if branch.ok then
       local branchName = branch.stdout:gsub("\n", "")
-      local ahead = tonumber(git("rev-list", `--count origin/{branchName}..{branchName}`).stdout)
       local behind = tonumber(git("rev-list", `--count {branchName}..origin/{branchName}`).stdout)
 
-      if ahead > 0 or behind > 0 then
-        print(`{ahead} commits ahead, {behind} commits behind`)
+      if behind > 0 then
+        print(`{behind} commits behind`)
         return process.exit(1)
       end
     end
