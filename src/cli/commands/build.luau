@@ -1,5 +1,5 @@
-local Commander = require("../dependencies/commander")
-local build = require("../libs/build")
+local Commander = require("../commander")
+local build = require("../../libs/build")
 
 local Command = Commander.Command
 

@@ -1,6 +1,8 @@
-local package_helper = require("../libs/package_helper")
+local renderJson = require("../../reviewing/render_json")
+local renderTree = require("../../reviewing/render_tree")
 
-local Commander = require("../dependencies/commander")
+local Commander = require("../commander")
+local getPackageInfo = require("../../reviewing/get_package_info")
 
 local Command = Commander.Command
 
@@ -13,5 +15,11 @@ return Command.new("ls")
   :action(function(opts)
     local depth: number = if opts.all then math.huge else tonumber(opts.depth) :: number
 
-    package_helper.print_package_info(depth, opts.json)
+    local package = getPackageInfo(depth)
+
+    if opts.json then
+      return renderJson(package)
+    end
+
+    return renderTree(package, { max_depth = depth })
   end)

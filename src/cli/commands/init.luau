@@ -1,7 +1,9 @@
-local Commander = require("../dependencies/commander")
-local manifest_helper = require("../libs/manifest_helper")
+local Commander = require("../commander")
 local serde = require("@lune/serde")
 local std = require("@pkg/std")
+
+local newPackage = require("../../pkg_manager/new_package")
+local saveManifest = require("../../pkg_manifest/save_package_manifest")
 
 local os = std.os
 local fs = std.fs
@@ -13,7 +15,7 @@ local command = Command.new("init")
   :description("Create a package.toml file")
   :option("-y, --yes", 'Automatically answer "yes" to any prompts that lpm might print on the command line.')
   :action(function(opts)
-    manifest_helper.save(manifest_helper.new(opts.yes))
+    saveManifest(newPackage(opts.yes))
 
     if not fs.isFile("./.gitignore") then
       fs.writeFile("./.gitignore", "")
