@@ -3,6 +3,7 @@ local readManifest = require("../pkg_manifest/read_package_manifest")
 local std = require("@pkg/std")
 
 local fs = std.fs
+local process = std.process
 
 return function(depth: number)
   local read_ok, manifest = readManifest()
@@ -11,6 +12,7 @@ return function(depth: number)
     name = manifest.name,
     version = manifest.version,
     dependencies = {},
+    path = process.cwd(),
   }
 
   for dependencyName, _ in manifest.dependencies do
