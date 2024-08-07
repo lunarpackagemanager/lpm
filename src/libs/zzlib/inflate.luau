@@ -3,7 +3,8 @@
 
 local inflate = {}
 
-local band, bnot, bxor, lshift, rshift = bit32.band, bit32.bnot, bit32.bxor, bit32.lshift, bit32.rshift
+local band, bnot, bxor, lshift, rshift =
+  bit32.band, bit32.bnot, bit32.bxor, bit32.lshift, bit32.rshift
 
 type BitStreamImpl = {
   __index: BitStreamImpl,

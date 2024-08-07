@@ -8,7 +8,12 @@ local Table = polyfill.Table
 
 type Dependencies = t.Dependencies
 
-local function get_dependency_info(path: string, dependencies: Dependencies, maxDepth: number, currentDepth: number)
+local function get_dependency_info(
+  path: string,
+  dependencies: Dependencies,
+  maxDepth: number,
+  currentDepth: number
+)
   local read_ok, manifest = readManifest(false, path .. "/package.toml")
   assert(read_ok and manifest, "Package manifest not found")
 
@@ -24,7 +29,12 @@ local function get_dependency_info(path: string, dependencies: Dependencies, max
       for dependencyName in manifest.dependencies do
         local package_path = `{path}/lune_modules/{dependencyName}`
         if fs.isFile(package_path .. "/package.toml") then
-          get_dependency_info(package_path, dependencies[manifest.name].dependencies :: any, maxDepth, currentDepth + 1)
+          get_dependency_info(
+            package_path,
+            dependencies[manifest.name].dependencies :: any,
+            maxDepth,
+            currentDepth + 1
+          )
         end
       end
     end

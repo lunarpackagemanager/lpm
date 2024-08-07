@@ -21,7 +21,8 @@ return function(yes: boolean?): t.PackageManifest
   exports.files = { "*" }
   exports.dependencies = {}
   exports.dev_dependencies = {}
-  exports.keywords = yes and {} or stdio.prompt("text", "Package Keywords (seperated by ';')"):split(";")
+  exports.keywords = yes and {}
+    or stdio.prompt("text", "Package Keywords (seperated by ';')"):split(";")
   exports.description = yes and "" or stdio.prompt("text", "Package Description", "")
   exports.repository = yes and "" or stdio.prompt("text", "Package Repository", "")
 

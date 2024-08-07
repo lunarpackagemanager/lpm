@@ -71,7 +71,12 @@ local function pprint(
           dependencyName,
           subData,
           currentDepth + 1,
-          precedingSymbols .. (currentDepth >= 1 and isLast and SYMBOLS.INDENT or SYMBOLS.VERTICAL or SYMBOLS.EMPTY),
+          precedingSymbols
+            .. (
+              currentDepth >= 1 and isLast and SYMBOLS.INDENT
+              or SYMBOLS.VERTICAL
+              or SYMBOLS.EMPTY
+            ),
           options,
           isCurrentLast
         )

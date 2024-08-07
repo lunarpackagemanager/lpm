@@ -21,5 +21,7 @@ return function(modifiable: boolean?, path: string?): (boolean, t.PackageManifes
     save(parsed_manifest)
   end
 
-  return true, setmetatable(parsed_manifest, constants.manifest_default), if modifiable then commit else nil
+  return true,
+    setmetatable(parsed_manifest, constants.manifest_default),
+    if modifiable then commit else nil
 end

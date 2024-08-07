@@ -11,7 +11,11 @@ local process = std.process
 
 type InstallPackageOptions = t.InstallPackageOptions
 
-local function install_package(identifier: string, options: InstallPackageOptions?, previous: string?)
+local function install_package(
+  identifier: string,
+  options: InstallPackageOptions?,
+  previous: string?
+)
   local options = options or {} :: InstallPackageOptions
 
   -- Parse package identifier
@@ -61,15 +65,23 @@ local function install_package(identifier: string, options: InstallPackageOption
 
   local git_clone_result
   if package_data.ref then
-    git_clone_result =
-      process.spawn("git", { "clone", "--depth", "1", repo_url, "--branch", package_data.ref, install_path })
+    git_clone_result = process.spawn(
+      "git",
+      { "clone", "--depth", "1", repo_url, "--branch", package_data.ref, install_path }
+    )
     if not git_clone_result.ok then
-      git_clone_result =
-        process.spawn("git", { "clone", "--depth", "1", repo_url, "--branch", "v" .. package_data.ref, install_path })
+      git_clone_result = process.spawn(
+        "git",
+        { "clone", "--depth", "1", repo_url, "--branch", "v" .. package_data.ref, install_path }
+      )
     end
   end
 
-  output.assert(git_clone_result.ok, `Failed to download {identifier} from GitHub:`, git_clone_result.stderr)
+  output.assert(
+    git_clone_result.ok,
+    `Failed to download {identifier} from GitHub:`,
+    git_clone_result.stderr
+  )
 
   fs.removeDir(`{install_path}/.git`)
 

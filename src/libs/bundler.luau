@@ -169,7 +169,8 @@ end
 
 local function replaceGlobal(str: string, globalName: string, replacement: any)
   local pattern = "(_G%." .. globalName .. " = )([^%s]+)"
-  local fullReplacement = typeof(replacement) == "string" and string.format("%q", replacement) or tostring(replacement)
+  local fullReplacement = typeof(replacement) == "string" and string.format("%q", replacement)
+    or tostring(replacement)
   return str:gsub(pattern, "%1" .. tostring(fullReplacement))
 end
 

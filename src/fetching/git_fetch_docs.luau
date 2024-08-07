@@ -14,13 +14,21 @@ return function(force: boolean?)
       fs.removeDir(DOCS_PATH)
     end
     fs.ensureDirExists(DOCS_PATH)
-    local fetchResult = process.spawn("git", { "clone", "--depth", "1", URL, "--branch", "main", DOCS_PATH })
+    local fetchResult = process.spawn(
+      "git",
+      { "clone", "--depth", "1", URL, "--branch", "main", DOCS_PATH },
+      { stdio = "forward" }
+    )
     assert(fetchResult.ok, "Can't fetch docs")
     fs.removeDir(`{DOCS_PATH}/.git`)
   else
     if not fs.isDir(DOCS_PATH) then
       fs.writeDir(DOCS_PATH)
-      local fetchResult = process.spawn("git", { "clone", "--depth", "1", URL, "--branch", "main", DOCS_PATH })
+      local fetchResult = process.spawn(
+        "git",
+        { "clone", "--depth", "1", URL, "--branch", "main", DOCS_PATH },
+        { stdio = "forward" }
+      )
       assert(fetchResult.ok, "Can't fetch docs")
       fs.removeDir(`{DOCS_PATH}/.git`)
     end

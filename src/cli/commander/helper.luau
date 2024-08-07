@@ -117,7 +117,10 @@ end
 
 function Helper.optionDescription(option: Opt): string
   return option.description :: string
-    .. (not (option.defaultValue == nil) and ' (default: "' .. tostring(option.defaultValue) .. '")' or "")
+    .. (
+      not (option.defaultValue == nil) and ' (default: "' .. tostring(option.defaultValue) .. '")'
+      or ""
+    )
 end
 
 function Helper.commandDescription(cmd: Command)
@@ -184,9 +187,11 @@ function Helper.visibleOptions(cmd: Command): { Opt }
 end
 
 function Helper.visibleArguments(cmd: Command)
-  if Array.find(cmd.registeredArguments, function(argument)
-    return argument.description ~= nil
-  end) then
+  if
+    Array.find(cmd.registeredArguments, function(argument)
+      return argument.description ~= nil
+    end)
+  then
     return cmd.registeredArguments
   end
 

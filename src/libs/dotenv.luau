@@ -64,7 +64,11 @@ end
 
     Loads `source` lua table into `target` like process.env.
 ]=]
-function Dotenv.populate(processEnv: DotenvPopulateInput, parsed: DotenvPopulateInput, options: DotenvConfigOptions): ()
+function Dotenv.populate(
+  processEnv: DotenvPopulateInput,
+  parsed: DotenvPopulateInput,
+  options: DotenvConfigOptions
+): ()
   for key, value in parsed do
     if processEnv[key] ~= nil then
       if options.override then

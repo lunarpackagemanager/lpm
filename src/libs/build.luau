@@ -26,7 +26,13 @@ local targets = {
   "linux-x86_64",
 }
 
-export type BuildTarget = "all" | "linux-x86_64" | "linux-aarch64" | "windows-x86_64" | "macos-x86_64" | "macos-aarch64"
+export type BuildTarget =
+  "all"
+  | "linux-x86_64"
+  | "linux-aarch64"
+  | "windows-x86_64"
+  | "macos-x86_64"
+  | "macos-aarch64"
 export type BuildMode = "dev" | "release"
 
 export type BuildOverride = {
@@ -71,7 +77,8 @@ function build.get_remote_runtime(version: string?)
 
     local container = net.request(url)
 
-    local runtimeData = zip.unzip(container.body, `lune{if userOs == "windows" then ".exe" else ""}`)
+    local runtimeData =
+      zip.unzip(container.body, `lune{if userOs == "windows" then ".exe" else ""}`)
     fs.writeFile(runtime, runtimeData)
 
     if userOs ~= "windows" then
@@ -123,7 +130,9 @@ function build.build(mode: BuildMode, override: BuildOverride)
     b_config = manifest.build_config or b_config
   end
 
-  b_config.optimization_level = override.optimization_level or b_config.optimization_level or DEFAULT_OPT_LVL
+  b_config.optimization_level = override.optimization_level
+    or b_config.optimization_level
+    or DEFAULT_OPT_LVL
   b_config.coverage_level = override.coverage_level or b_config.coverage_level or DEFAULT_CV_LVL
   b_config.debug_level = override.coverage_level or b_config.debug_level or DEFAULT_DBG_LVL
   b_config.target = override.target or b_config.target or DEFAULT_TARGET :: any

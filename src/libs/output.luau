@@ -13,7 +13,10 @@ local LEADER = "  "
 
 local output = {}
 
-function output.format(format: { stdio.Color | stdio.Style } | stdio.Color | stdio.Style, text: string)
+function output.format(
+  format: { stdio.Color | stdio.Style } | stdio.Color | stdio.Style,
+  text: string
+)
   if typeof(format) == "string" then
     format = { format }
   end

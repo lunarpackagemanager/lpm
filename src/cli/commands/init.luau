@@ -13,7 +13,10 @@ local Command = Commander.Command
 local command = Command.new("init")
   :aliases({ "create" })
   :description("Create a package.toml file")
-  :option("-y, --yes", 'Automatically answer "yes" to any prompts that lpm might print on the command line.')
+  :option(
+    "-y, --yes",
+    'Automatically answer "yes" to any prompts that lpm might print on the command line.'
+  )
   :action(function(opts)
     saveManifest(newPackage(opts.yes))
 

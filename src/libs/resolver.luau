@@ -11,7 +11,8 @@ function resolver.parse_identifier(identifier: string): t.PackageData?
   local CORE = "[%w%-_%.]+"
   local REF = "[%w%-%._/]+"
 
-  local valid = (string.match(identifier, `^{CORE}$`) or string.match(identifier, `^{CORE}@{REF}$`)) ~= nil
+  local valid = (string.match(identifier, `^{CORE}$`) or string.match(identifier, `^{CORE}@{REF}$`))
+    ~= nil
 
   if valid then
     return {
@@ -40,7 +41,10 @@ function resolver.parse_semver(semver: string): t.Semver
     string.match(semver, `^{VERSION_CORE}$`)
     or string.match(semver, `^{VERSION_CORE}%-{DOT_SEPERATED_IDENTIFIERS}$`)
     or string.match(semver, `^{VERSION_CORE}%+{DOT_SEPERATED_IDENTIFIERS}$`)
-    or string.match(semver, `^{VERSION_CORE}%-{DOT_SEPERATED_IDENTIFIERS}+{DOT_SEPERATED_IDENTIFIERS}$`)
+    or string.match(
+      semver,
+      `^{VERSION_CORE}%-{DOT_SEPERATED_IDENTIFIERS}+{DOT_SEPERATED_IDENTIFIERS}$`
+    )
   ) ~= nil
 
   if version_data.valid then

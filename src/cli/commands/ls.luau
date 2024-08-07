@@ -13,7 +13,10 @@ return Command.new("ls")
   :option("-a, --all", "List all dependencies")
   :option("-j, --json", "Output in JSON format")
   :action(function(opts)
-    local depth: number = if opts.all then math.huge elseif opts.depth then tonumber(opts.depth) :: number else 1
+    local depth: number = if opts.all
+      then math.huge
+      elseif opts.depth then tonumber(opts.depth) :: number
+      else 1
 
     local package = getPackageInfo(depth)
 

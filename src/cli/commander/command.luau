@@ -104,18 +104,25 @@ function Command.prototype.showHelpAfterError(self: Command, displayHelp: boolea
   return self
 end
 
-function Command.prototype.showSuggestionAfterError(self: Command, displaySuggestion: boolean?): Command
-  local actualDisplaySuggestion: boolean = displaySuggestion == nil and true or displaySuggestion :: boolean
+function Command.prototype.showSuggestionAfterError(
+  self: Command,
+  displaySuggestion: boolean?
+): Command
+  local actualDisplaySuggestion: boolean = displaySuggestion == nil and true
+    or displaySuggestion :: boolean
   self._showSuggestionAfterError = not not actualDisplaySuggestion
   return self
 end
 
-function Command.prototype.addCommand(self: Command, cmd: Command, opts: { [string]: any }?): Command
+function Command.prototype.addCommand(
+  self: Command,
+  cmd: Command,
+  opts: { [string]: any }?
+): Command
   if not cmd._name then
     Error.new(
       `Command passed to .addCommand() must have a name - specifify the name in Command constructor or using :name()`
-    )
-      :throw()
+    ):throw()
   end
 
   local actualOpts: { [string]: any } = opts or {}
@@ -138,7 +145,12 @@ function Command.prototype.createArgument(_: Command, name: string, description:
   return Arg.new(name, description)
 end
 
-function Command.prototype.argument(self: Command, name: string, description: string?, defaultValue: any?): Command
+function Command.prototype.argument(
+  self: Command,
+  name: string,
+  description: string?,
+  defaultValue: any?
+): Command
   local argument = self:createArgument(name, description)
   argument:default(defaultValue)
   self:addArgument(argument)
@@ -170,7 +182,11 @@ function Command.prototype.addArgument(self: Command, argument: Arg): Command
   return self
 end
 
-function Command.prototype.helpCommand(self: Command, nameAndArgs: string?, description: string?): Command
+function Command.prototype.helpCommand(
+  self: Command,
+  nameAndArgs: string?,
+  description: string?
+): Command
   local actualNameAndArgs = nameAndArgs or "help [command]"
   local helpName, helpArgs = actualNameAndArgs:match("([^ ]+) *(.*)")
   local helpDescription = description or "display help for command"
@@ -235,10 +251,12 @@ end
 
 function Command.prototype._registerOption(self: Command, option: Opt): ()
   local matchingOption: Opt? = (
-    option.short and self:_findOption(option.short) or (option.long and self:_findOption(option.long))
+    option.short and self:_findOption(option.short)
+    or (option.long and self:_findOption(option.long))
   )
   if matchingOption then
-    local matchingFlag = option.long and self:_findOption(option.long) and option.long or option.short
+    local matchingFlag = option.long and self:_findOption(option.long) and option.long
+      or option.short
     Error.new(
       `Cannot add option '{option.flags}'{self._name and ` to command '{self._name}'`} due to conflicting flag '{matchingFlag}' - already used by option '{matchingOption.flags}'`
     ):throw()
@@ -304,7 +322,12 @@ function Command.prototype.addOption(self: Command, option: Opt): Command
   return self
 end
 
-function Command.prototype.option(self: Command, flags: string, description: string?, defaultValue: any?): Command
+function Command.prototype.option(
+  self: Command,
+  flags: string,
+  description: string?,
+  defaultValue: any?
+): Command
   local option = self:createOption(flags, description)
 
   if defaultValue then
@@ -347,7 +370,12 @@ function Command.prototype.parse(self: Command, argv: { string }?)
   return self:_parseCommand({}, userArgs)
 end
 
-function Command.prototype._dispatchSubcommand(self: Command, commandName: string, operands: any, unknown: any): any?
+function Command.prototype._dispatchSubcommand(
+  self: Command,
+  commandName: string,
+  operands: any,
+  unknown: any
+): any?
   local subcommand = self:_findCommand(commandName)
   if not subcommand then
     self:help()
@@ -383,7 +411,9 @@ function Command.prototype._checkNumberOfArguments(self: Command): ()
     end
   end
 
-  if #self.registeredArguments > 0 and self.registeredArguments[#self.registeredArguments].variadic then
+  if
+    #self.registeredArguments > 0 and self.registeredArguments[#self.registeredArguments].variadic
+  then
     return
   end
 
@@ -508,7 +538,9 @@ end
 function Command.prototype._checkForMissingMandatoryOptions(self: Command): Opt?
   for _, cmd in self:_getCommandAndAncestors() :: { Command } do
     for _, anOption in cmd.options do
-      if anOption.mandatory and (cmd :: Command):getOptionValue(anOption:attributeName()) == nil then
+      if
+        anOption.mandatory and (cmd :: Command):getOptionValue(anOption:attributeName()) == nil
+      then
         self:missingMandatoryOptionValue(anOption)
       end
     end
@@ -516,7 +548,10 @@ function Command.prototype._checkForMissingMandatoryOptions(self: Command): Opt?
   return
 end
 
-function Command.prototype.parseOptions(self: Command, argv: { string }): { operands: { string }, unknown: { string } }
+function Command.prototype.parseOptions(
+  self: Command,
+  argv: { string }
+): { operands: { string }, unknown: { string } }
   local operands = {}
   local unknown = {}
   local dest = operands
@@ -632,7 +667,8 @@ function Command.prototype._excessArguments(self: Command, receivedArgs: { strin
   local expected = #self.registeredArguments
   local s = expected == 1 and "" or "s"
   local forSubcommand = self.parent and ` for '{self._name}'` or ""
-  local message = `error: too many arguments{forSubcommand}. Expected {expected} argument{s} but got {#receivedArgs}.`
+  local message =
+    `error: too many arguments{forSubcommand}. Expected {expected} argument{s} but got {#receivedArgs}.`
   self:error(message, 0)
 end
 
@@ -659,7 +695,12 @@ function Command.prototype.unknownCommand(self: Command): ()
   self:error(message, 0)
 end
 
-function Command.prototype.version(self: Command, str: string?, flags: string?, description: string?): Command
+function Command.prototype.version(
+  self: Command,
+  str: string?,
+  flags: string?,
+  description: string?
+): Command
   self._version = str or self._version
   flags = flags or "-V, --version"
   description = description or "output the version number"
@@ -695,9 +736,11 @@ function Command.prototype.alias(self: Command, alias: string): Command
   if self.parent then
     local matchingCommand = self.parent:_findCommand(alias)
     if matchingCommand then
-      local existingCommand = table.concat(Array.concat({ matchingCommand._name }, matchingCommand._aliases), "|")
-      Error.new(`cannot add alias '{alias}' to command '{self._name}' as already have command '{existingCommand}'`)
-        :throw()
+      local existingCommand =
+        table.concat(Array.concat({ matchingCommand._name }, matchingCommand._aliases), "|")
+      Error.new(
+        `cannot add alias '{alias}' to command '{self._name}' as already have command '{existingCommand}'`
+      ):throw()
     end
   end
 
@@ -761,7 +804,11 @@ function Command.prototype._outputHelpIfRequested(self: Command, args: { string 
   end
 end
 
-function Command.prototype.helpOption(self: Command, flags: (string | boolean)?, description: string?): Command
+function Command.prototype.helpOption(
+  self: Command,
+  flags: (string | boolean)?,
+  description: string?
+): Command
   if typeof(flags) == "boolean" then
     if flags == true then
       self._helpOption = self._helpOption or nil
