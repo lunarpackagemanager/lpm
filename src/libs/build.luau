@@ -6,7 +6,7 @@ local constants = require("../constants")
 local bundler = require("./bundler")
 local output = require("./output")
 local readManifest = require("../pkg_manifest/read_package_manifest")
-local zip = require("./zzlib")
+local zip = require("./zip")
 
 local fs = std.fs
 local process = std.process
@@ -45,8 +45,6 @@ export type BuildOverride = {
   comment: boolean?,
 }
 
-local runtime = `{GLOBAL_DIR}/bin/lune`
-
 local MAGIC = "cr3sc3nt"
 
 function build.patch_binary(runtime: string, bytecode: string): string
@@ -56,16 +54,18 @@ end
 local function run(cmd: string)
   local arguments = string.split(cmd, " ")
   local command = table.remove(arguments, 1) :: string
-  -- table.insert(arguments, ">")
-  -- table.insert(arguments, "nul")
   process.spawn(command, arguments, { stdio = "forward" })
 end
 
 function build.build_binary(loc: string, output: string, os: string, arch: string)
+  local name = `lune{if userOs == "windows" then ".exe" else ""}`
+  local runtime = `{GLOBAL_DIR}/bin/{name}`
   return run(`{runtime} build {loc} -o {output} -t {os}-{arch}`)
 end
 
 function build.get_remote_runtime(version: string?)
+  local name = `lune{if userOs == "windows" then ".exe" else ""}`
+  local runtime = `{GLOBAL_DIR}/bin/{name}`
   if not fs.isFile(runtime) then
     local url = string.format(
       "https://github.com/lune-org/lune/releases/download/v%s/lune-%s-%s-%s.zip",
@@ -77,12 +77,13 @@ function build.get_remote_runtime(version: string?)
 
     local container = net.request(url)
 
-    local runtimeData =
-      zip.unzip(container.body, `lune{if userOs == "windows" then ".exe" else ""}`)
-    fs.writeFile(runtime, runtimeData)
+    local runtimeData = zip.unzip(container.body, name)
+    if runtimeData then
+      fs.writeFile(runtime, runtimeData)
 
-    if userOs ~= "windows" then
-      run(`chmod 755 {runtime}`)
+      if userOs ~= "windows" then
+        run(`chmod 755 {runtime}`)
+      end
     end
   end
 end
