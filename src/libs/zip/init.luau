@@ -5,12 +5,14 @@
 
 -- Copyright (c) 2016-2024 Francois Galea <fgalea at free.fr>
 -- Copyright (c) 2024 xhayper
--- Copyright (c) 2024 lunar-package
+-- Copyright (c) 2024 lune-package
 -- This program is free software. It comes without any warranty, to
 -- the extent permitted by applicable law. You can redistribute it
 -- and/or modify it under the terms of the Do What The **** You Want
 -- To Public License, Version 2, as published by Sam Hocevar. See
 -- the COPYING file for more details.
+
+-- Above license have been modified to be compatible with Roblox's terms of service.
 
 local infl = require("./inflate")
 

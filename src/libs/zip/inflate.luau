@@ -1,6 +1,17 @@
 --!strict
 --!native
 
+-- zzlib.luau - zlib decompression in Luau
+
+-- Copyright (c) 2016-2024 Francois Galea <fgalea at free.fr>
+-- This program is free software. It comes without any warranty, to
+-- the extent permitted by applicable law. You can redistribute it
+-- and/or modify it under the terms of the Do What The **** You Want
+-- To Public License, Version 2, as published by Sam Hocevar. See
+-- the COPYING file for more details.
+
+-- Above license have been modified to be compatible with Roblox's terms of service.
+
 local inflate = {}
 
 local band, bnot, bxor, lshift, rshift =
@@ -33,7 +44,7 @@ function inflate.bitstream_init(data: string): BitStream
 
   -- get rid of n first bits
   function bs.flushb(self: BitStream, n: number)
-    self.n = self.n - n
+    self.n -= n
     self.b = rshift(self.b, n)
   end
   -- returns the next byte from the stream, excluding any half-read bytes
@@ -285,6 +296,7 @@ function inflate.crc32(s: string, crc: number?): number
   end
   new_crc = bnot(new_crc)
   if new_crc < 0 then
+    -- in Lua < 5.2, sign extension was performed
     new_crc += 4294967296
   end
   return new_crc
