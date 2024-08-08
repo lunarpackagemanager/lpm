@@ -10,7 +10,7 @@ local command = Command.new("publish"):description("Publish package to git"):act
   requireCleanWorkTree()
   checkRemote()
 
-  return process.spawn("git", { "push" })
+  return process.spawn("git", { "push" }, { stdio = "inherit" })
 end)
 
 return command
