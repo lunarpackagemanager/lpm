@@ -1,11 +1,14 @@
 local getDependencyInfo = require("./get_dependency_info")
 local readManifest = require("../pkg_manifest/read_package_manifest")
 local std = require("@pkg/std")
+local t = require("../types")
 
 local fs = std.fs
 local process = std.process
 
-return function(depth: number)
+type Package = t.Package
+
+return function(depth: number): Package
   local read_ok, manifest = readManifest()
   assert(read_ok and manifest, "Package manifest not found")
   local data = {
